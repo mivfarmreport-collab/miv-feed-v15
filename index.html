@@ -1,0 +1,3793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>MIV Farm Daily Feeds Record</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            forest: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              200: '#bbf7d0',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+              800: '#166534',
+              900: '#14532d',
+              950: '#052e16',
+            },
+            amber: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #e2e8f0;
+      margin: 0;
+      padding: 0;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes slideDownBanner {
+      0% { transform: translateY(-120%); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .android-banner-in {
+      animation: slideDownBanner 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .tactile-btn {
+      transition: transform 0.12s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .tactile-btn:active {
+      transform: scale(0.96);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center sm:p-4 bg-slate-200 text-slate-900">
+
+  <!-- Android Device Shell -->
+  <div id="android-shell" class="relative w-full sm:max-w-[430px] h-screen sm:h-[850px] bg-[#F4F6F5] sm:rounded-[38px] sm:border-[6px] sm:border-slate-900 sm:shadow-2xl flex flex-col overflow-hidden">
+
+    <!-- Android Heads-Up Push Notification Banner -->
+    <div id="heads-up-notification" class="hidden absolute top-3 left-3 right-3 z-50 bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-xl border border-slate-700/80 android-banner-in">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl bg-forest-600 flex items-center justify-center shrink-0 mt-0.5">
+          <i data-lucide="bell-ring" class="w-5 h-5 text-white"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-forest-400">MIV Farm Alert • Just now</span>
+            <button onclick="dismissHeadsUpNotification()" class="text-slate-400 hover:text-white p-0.5">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <p id="heads-up-title" class="text-xs font-bold text-white mt-0.5 truncate">New Daily Feed Entry Submitted</p>
+          <p id="heads-up-body" class="text-[11px] text-slate-300 mt-0.5 line-clamp-2">Worker logged bags & auto-synced.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Material 3 App Bar -->
+    <header class="bg-forest-900 text-white px-4 pt-3.5 pb-3.5 shrink-0 shadow-md z-20">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-amber-500 flex items-center justify-center shadow-inner shrink-0">
+            <span class="font-extrabold text-forest-950 text-sm tracking-tight">MIV</span>
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-sm font-extrabold tracking-tight leading-tight truncate">MIV Farm Feeds</h1>
+            <p id="header-cycle-label" class="text-[11px] text-forest-200 font-medium truncate">4 Groups • 60-Day Cycle</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <!-- Dropbox Cloud Sync Pill -->
+          <button onclick="openDropboxModal()" id="dropbox-status-pill" title="Dropbox Content API v2 Sync"
+            class="tactile-btn flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-forest-800/90 hover:bg-forest-700 border border-forest-700 text-[11px] font-semibold transition">
+            <span id="dropbox-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span id="dropbox-pill-text" class="max-w-[78px] truncate">Local Mode</span>
+          </button>
+
+          <!-- Notification Inbox Bell -->
+          <button onclick="openNotificationsModal()" id="notif-bell-btn" title="Submission Alerts"
+            class="tactile-btn relative p-2 rounded-full bg-forest-800/90 hover:bg-forest-700 border border-forest-700">
+            <i data-lucide="bell" class="w-4 h-4 text-forest-100"></i>
+            <span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 text-forest-950 text-[10px] font-extrabold flex items-center justify-center">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Segmented Role Switcher: User vs Admin -->
+      <div class="mt-3 bg-forest-950/70 p-1 rounded-full grid grid-cols-2 gap-1 border border-forest-800">
+        <button id="role-btn-user" onclick="switchRole('user')"
+          class="tactile-btn flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-bold transition bg-white text-forest-950 shadow-sm">
+          <i data-lucide="user-check" class="w-3.5 h-3.5"></i>
+          <span>Farm Worker (User)</span>
+        </button>
+        <button id="role-btn-admin" onclick="switchRole('admin')"
+          class="tactile-btn flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-bold transition text-forest-200 hover:text-white">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          <span>Farm Manager (Admin)</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Scrollable Viewport -->
+    <main id="app-viewport" class="flex-1 overflow-y-auto no-scrollbar px-4 pt-4 pb-24 space-y-4">
+      <!-- Dynamic Content Injected Here -->
+    </main>
+
+    <!-- Android Material 3 Bottom Navigation Bar -->
+    <nav id="bottom-nav" class="bg-white border-t border-slate-200/90 px-2 py-2 shrink-0 grid gap-1 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+      <!-- Dynamic Nav Tabs Injected Here -->
+    </nav>
+
+    <!-- Snackbar / Toast Message -->
+    <div id="snackbar" class="hidden absolute bottom-20 left-4 right-4 z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-lg flex items-center justify-between gap-3 text-xs font-medium">
+      <div class="flex items-center gap-2.5">
+        <i id="snackbar-icon" data-lucide="check-circle-2" class="w-4 h-4 text-forest-400 shrink-0"></i>
+        <span id="snackbar-text">Saved successfully</span>
+      </div>
+      <button onclick="hideSnackbar()" class="text-amber-400 font-bold uppercase text-[11px] tracking-wider">OK</button>
+    </div>
+
+    <!-- Dropbox Content API v2 Settings Modal -->
+    <div id="dropbox-modal" class="hidden absolute inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-3">
+      <div class="bg-white w-full rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-4 max-h-[90%] overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <i data-lucide="cloud" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-sm font-extrabold text-slate-900">Dropbox Content API v2</h2>
+              <p class="text-[11px] text-slate-500">Target: <code id="dbx-target-preview" class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-forest-800">/MIV_Farm_Records/miv_farm_database.json</code></p>
+            </div>
+          </div>
+          <button onclick="closeDropboxModal()" class="p-2 rounded-full hover:bg-slate-100 text-slate-500">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Scope Troubleshooting Guide Banner -->
+        <div id="dropbox-scope-alert" class="hidden bg-amber-50 border border-amber-300 rounded-2xl p-3 text-[11px] text-amber-950 space-y-1.5">
+          <p class="font-extrabold text-amber-900 flex items-center gap-1.5">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0"></i>
+            <span>Dropbox Permission Scope Required</span>
+          </p>
+          <p id="dropbox-scope-msg" class="text-amber-900 leading-relaxed">Your Dropbox token is missing required write permissions.</p>
+          <ol class="list-decimal list-inside space-y-0.5 text-amber-900 font-medium pt-0.5">
+            <li>Open <strong>Dropbox App Console</strong> &rarr; select your app.</li>
+            <li>Go to the <strong>Permissions</strong> tab and check <code class="font-mono bg-white px-1 rounded font-bold">files.content.write</code> &amp; <code class="font-mono bg-white px-1 rounded font-bold">files.content.read</code>, then click <strong>Submit</strong>.</li>
+            <li>Generate a new Refresh Token or Access Token after updating permissions.</li>
+          </ol>
+        </div>
+
+        <div class="space-y-3">
+          <!-- Permanent Refresh Token Card (Never Expires) -->
+          <div class="bg-emerald-50/70 border border-emerald-300/90 rounded-2xl p-3.5 space-y-2.5">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-[11px] font-extrabold uppercase tracking-wide text-emerald-950 leading-tight">
+                Permanent Refresh Token<br/><span class="text-emerald-800 font-bold">(Recommended)</span>
+              </span>
+              <span class="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-200/80 text-emerald-950 text-center leading-tight shrink-0">
+                Never<br/>Expires
+              </span>
+            </div>
+
+            <div>
+              <input id="dbx-refresh-input" type="password" placeholder="Refresh Token..."
+                class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-emerald-300 text-xs font-mono focus:outline-none focus:border-forest-700" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <input id="dbx-appkey-input" type="text" placeholder="App Key"
+                class="w-full px-3 py-2.5 rounded-xl bg-white border border-emerald-300 text-xs font-mono focus:outline-none focus:border-forest-700" />
+              <input id="dbx-appsecret-input" type="password" placeholder="App Secret"
+                class="w-full px-3 py-2.5 rounded-xl bg-white border border-emerald-300 text-xs font-mono focus:outline-none focus:border-forest-700" />
+            </div>
+
+            <button type="button" onclick="startDropboxPkceOAuth()"
+              class="tactile-btn w-full py-2 px-3 rounded-xl bg-white hover:bg-emerald-100/70 text-emerald-950 border border-emerald-300 text-[11px] font-bold flex items-center justify-center gap-1.5">
+              <i data-lucide="key-round" class="w-3.5 h-3.5 text-forest-700"></i> Generate / Authorize Refresh Token via App Key
+            </button>
+          </div>
+
+          <!-- Direct Access Token (Optional Fallback) -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Direct Access Token (Optional Fallback)</label>
+            <div class="relative flex items-center">
+              <input id="dbx-token-input" type="password" placeholder="sl.B..."
+                class="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-mono focus:outline-none focus:border-forest-600" />
+              <button type="button" onclick="toggleDropboxTokenVisibility()" title="Show / Hide Token"
+                class="absolute right-2.5 p-1.5 text-slate-400 hover:text-slate-700">
+                <i id="dbx-token-eye-icon" data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Target Dropbox Folder Path -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Target Dropbox Folder Path</label>
+            <input id="dbx-folder-input" type="text" value="/MIV_Farm_Records"
+              oninput="updateDropboxTargetPreview(this.value)"
+              class="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-mono focus:outline-none focus:border-forest-600" />
+          </div>
+
+          <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
+            <div>
+              <p class="text-xs font-bold text-slate-800">Auto-Sync on Worker Submit</p>
+              <p class="text-[11px] text-slate-500">Automatically update Dropbox when user submits</p>
+            </div>
+            <input id="dbx-autosync-toggle" type="checkbox" checked class="w-5 h-5 accent-forest-700 rounded cursor-pointer" />
+          </div>
+
+          <div class="flex items-center justify-between text-[11px] text-slate-500 px-1">
+            <span>Last Sync: <strong id="dbx-last-sync" class="text-slate-700">Never</strong></span>
+            <span id="dbx-sync-state-label" class="font-semibold text-amber-600">Local cache active</span>
+          </div>
+
+          <!-- Exact Dropbox Diagnostic Status Box -->
+          <div id="dbx-exact-error-box" class="hidden rounded-2xl p-3 border text-[11px] space-y-1">
+            <div class="flex items-center justify-between">
+              <span id="dbx-exact-error-title" class="font-extrabold">Dropbox Diagnostic</span>
+              <span id="dbx-exact-error-code" class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/80 font-bold"></span>
+            </div>
+            <p id="dbx-exact-error-detail" class="font-mono text-[10px] break-all leading-relaxed"></p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 pt-1">
+          <button onclick="saveDropboxConfig()" class="tactile-btn py-2.5 px-2.5 rounded-xl bg-forest-800 hover:bg-forest-900 text-white text-xs font-bold flex items-center justify-center gap-1">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i> Save &amp; Push
+          </button>
+          <button onclick="testDropboxConnection()" class="tactile-btn py-2.5 px-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-forest-950 text-xs font-extrabold flex items-center justify-center gap-1">
+            <i data-lucide="activity" class="w-3.5 h-3.5"></i> Test Token
+          </button>
+          <button onclick="pullFromDropbox()" class="tactile-btn py-2.5 px-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1">
+            <i data-lucide="download-cloud" class="w-3.5 h-3.5"></i> Pull Cloud
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <button onclick="copyAutoLoginUrl()" class="tactile-btn w-full py-3 px-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold flex items-center justify-center gap-2 shadow-sm">
+            <i data-lucide="link" class="w-4 h-4 text-amber-400"></i> Copy 1-Tap New Device Sync Link
+          </button>
+          <button onclick="exportJsonBackup()" class="tactile-btn w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold flex items-center justify-center gap-1.5">
+            <i data-lucide="file-json" class="w-3.5 h-3.5"></i> Export JSON Backup
+          </button>
+        </div>
+        <p class="text-[10px] text-slate-500 leading-snug px-1">
+          <strong>Cross-Device Sync:</strong> Paste or send the <strong>1-Tap New Device Sync Link</strong> to any phone, tablet, or browser to instantly hydrate all farm records, groups, and permanent auto-refresh credentials.
+        </p>
+      </div>
+    </div>
+
+    <!-- Submission Notifications Drawer Modal -->
+    <div id="notifications-modal" class="hidden absolute inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-3">
+      <div class="bg-white w-full rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-3 max-h-[82%] flex flex-col">
+        <div class="flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+              <i data-lucide="bell" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h2 class="text-sm font-extrabold text-slate-900">Submission Activity Alerts</h2>
+              <p class="text-[11px] text-slate-500">Live notifications when workers submit feeds</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="clearAllNotifications()" class="text-[11px] font-bold text-slate-500 hover:text-slate-800 px-2 py-1">Clear</button>
+            <button onclick="closeNotificationsModal()" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-500">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+        <div id="notifications-list" class="flex-1 overflow-y-auto space-y-2 pr-0.5">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Password / PIN Verification Modal -->
+    <div id="pin-auth-modal" class="hidden absolute inset-0 z-50 bg-slate-950/65 backdrop-blur-xs flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-[340px] rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-forest-100 text-forest-800 flex items-center justify-center">
+              <i data-lucide="lock" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h2 id="pin-modal-title" class="text-sm font-extrabold text-slate-900">Password Required</h2>
+              <p id="pin-modal-subtitle" class="text-[11px] text-slate-500">Enter access password to continue</p>
+            </div>
+          </div>
+          <button onclick="closePinModal()" class="p-1.5 rounded-full hover:bg-slate-100 text-slate-500">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <form onsubmit="submitPinVerification(event)" class="space-y-3">
+          <div>
+            <input id="pin-modal-input" type="password" inputmode="numeric" autocomplete="off" placeholder="Enter Password"
+              class="w-full px-4 py-3 rounded-2xl bg-slate-50 border-2 border-slate-200 focus:border-forest-700 font-mono text-center text-lg font-extrabold tracking-widest text-slate-900 outline-none" />
+            <p id="pin-modal-error" class="hidden text-[11px] font-bold text-rose-600 text-center mt-1.5">Incorrect password. Please try again.</p>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button type="button" onclick="closePinModal()" class="tactile-btn py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold">
+              Cancel
+            </button>
+            <button type="submit" class="tactile-btn py-2.5 rounded-xl bg-forest-800 hover:bg-forest-900 text-white text-xs font-extrabold">
+              Unlock
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Amend / Edit Daily Feed Record Modal -->
+    <div id="edit-record-modal" class="hidden absolute inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-3">
+      <div class="bg-white w-full rounded-3xl p-5 shadow-2xl border border-slate-200 space-y-3.5 max-h-[92%] overflow-y-auto">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h2 class="text-sm font-extrabold text-slate-900">Amend Daily Feed Log</h2>
+              <p class="text-[11px] text-slate-500">Fix wrong entry &amp; auto-sync to Dropbox</p>
+            </div>
+          </div>
+          <button onclick="closeEditRecordModal()" class="p-2 rounded-full hover:bg-slate-100 text-slate-500">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <form id="edit-record-form" onsubmit="handleSaveAmendedRecord(event)" class="space-y-3 text-xs">
+          <input type="hidden" id="edit-rec-id" />
+
+          <!-- Record Type & Farm Group -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Record Type</label>
+              <select id="edit-rec-type" onchange="toggleEditDeliveryFields()"
+                class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 outline-none focus:border-forest-600">
+                <option value="output">Hopper Input</option>
+                <option value="input">Delivery</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Farm Group</label>
+              <select id="edit-rec-group" onchange="populateEditHousesForGroup()"
+                class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-forest-900 outline-none focus:border-forest-600">
+              </select>
+            </div>
+          </div>
+
+          <!-- House & Worker / Shift -->
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">House No</label>
+              <select id="edit-rec-house" onchange="populateEditWorkersForHouse()"
+                class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-bold text-slate-800 outline-none focus:border-forest-600">
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Worker / Shift</label>
+              <select id="edit-rec-worker"
+                class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none focus:border-forest-600">
+              </select>
+            </div>
+          </div>
+
+          <!-- Feed Type & Total Bags -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-2">
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Feeds Name / Type</label>
+              <select id="edit-rec-feed"
+                class="w-full px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-semibold text-slate-800 outline-none focus:border-forest-600">
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Total Bags</label>
+              <input id="edit-rec-bags" type="number" min="0" max="5000" required
+                class="w-full px-3 py-2.5 rounded-xl bg-forest-50/70 border border-forest-300 font-mono font-extrabold text-forest-900 text-center outline-none focus:border-forest-700" />
+            </div>
+          </div>
+
+          <!-- Hopper Silo Input (Shown when Hopper Input) -->
+          <div id="edit-rec-hopper-silo-box" class="hidden">
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Total Silo Input to Hopper</label>
+            <input id="edit-rec-hopper-silo" type="number" step="0.1" min="0" max="30" placeholder="0"
+              class="w-full px-3 py-2 rounded-xl bg-amber-50/70 border border-amber-200 font-mono font-bold text-amber-900 outline-none" />
+          </div>
+
+          <!-- Date & Time -->
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Date &amp; Time</label>
+            <input id="edit-rec-datetime" type="datetime-local" required
+              class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-800 outline-none focus:border-forest-600" />
+          </div>
+
+          <!-- Optional Delivery Fields (Shown when Delivery) -->
+          <div id="edit-rec-delivery-box" class="hidden space-y-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Silo Delivery (1 Ton = 20 Bags)</label>
+              <input id="edit-rec-silo-tons" type="number" step="0.1" min="0" max="30" placeholder="Leave blank if Bag Delivery"
+                oninput="syncEditSiloToBags()"
+                class="w-full px-3 py-2 rounded-xl bg-amber-50/70 border border-amber-200 font-mono font-bold text-amber-900 outline-none" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Delivery Order (DO)</label>
+                <input id="edit-rec-do" type="text" placeholder="DO-88910"
+                  class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono uppercase outline-none" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Lorry No</label>
+                <input id="edit-rec-lorry" type="text" placeholder="WXY 1234"
+                  class="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono uppercase outline-none" />
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-2">
+            <button type="button" onclick="closeEditRecordModal()"
+              class="tactile-btn py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">
+              Cancel
+            </button>
+            <button type="submit"
+              class="tactile-btn py-2.5 px-3 rounded-xl bg-forest-800 hover:bg-forest-900 text-white font-extrabold flex items-center justify-center gap-1.5">
+              <i data-lucide="check" class="w-4 h-4"></i> Save Amendment
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. STATE MANAGEMENT, DATE UTILITIES & DURABLE STORAGE
+    // =========================================================================
+    const STORAGE_KEY = 'MIV_FARM_FEEDS_APP_V1';
+    const IDB_NAME = 'MIVFarmDurableDB';
+    const IDB_STORE = 'stateStore';
+    const CACHE_NAME = 'miv-farm-state-cache-v1';
+    const CACHE_URL = '/__miv_farm_persisted_state__.json';
+
+    // Date helper defined first so DEFAULT_STATE and filters can safely call it
+    function getRelativeDateStr(offsetDays) {
+      const d = new Date();
+      d.setDate(d.getDate() + offsetDays);
+      return d.toISOString().split('T')[0];
+    }
+
+    function openDurableIDB() {
+      return new Promise((resolve) => {
+        if (typeof indexedDB === 'undefined') return resolve(null);
+        try {
+          const req = indexedDB.open(IDB_NAME, 1);
+          req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(IDB_STORE)) {
+              db.createObjectStore(IDB_STORE);
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }
+
+    async function writeIDBState(serialized) {
+      const db = await openDurableIDB();
+      if (!db) return;
+      try {
+        const tx = db.transaction(IDB_STORE, 'readwrite');
+        tx.objectStore(IDB_STORE).put(serialized, STORAGE_KEY);
+      } catch (e) {}
+    }
+
+    async function readIDBState() {
+      const db = await openDurableIDB();
+      if (!db) return null;
+      return new Promise((resolve) => {
+        try {
+          const tx = db.transaction(IDB_STORE, 'readonly');
+          const req = tx.objectStore(IDB_STORE).get(STORAGE_KEY);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => resolve(null);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }
+
+    async function writeCacheApiState(serialized) {
+      if (typeof caches === 'undefined') return;
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(CACHE_URL, new Response(serialized, {
+          headers: { 'Content-Type': 'application/json' }
+        }));
+      } catch (e) {}
+    }
+
+    async function readCacheApiState() {
+      if (typeof caches === 'undefined') return null;
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        const res = await cache.match(CACHE_URL);
+        if (!res) return null;
+        return await res.text();
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function encodeHashPayload(obj) {
+      try {
+        const json = JSON.stringify(obj);
+        return btoa(unescape(encodeURIComponent(json)));
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function decodeHashPayload(b64) {
+      try {
+        const json = decodeURIComponent(escape(atob(b64)));
+        return JSON.parse(json);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function readUrlHashConfig() {
+      try {
+        const hash = window.location.hash || '';
+        const match = hash.match(/miv=([A-Za-z0-9+/=]+)/);
+        if (match && match[1]) {
+          return decodeHashPayload(match[1]);
+        }
+        const searchParams = new URLSearchParams(window.location.search || '');
+        const queryMiv = searchParams.get('miv');
+        if (queryMiv) {
+          return decodeHashPayload(queryMiv);
+        }
+      } catch (e) {}
+      return null;
+    }
+
+    function syncUrlHashConfig(stateObj) {
+      try {
+        if (!stateObj || !stateObj.dropbox) return;
+        const compact = {
+          t: stateObj.dropbox.accessToken || '',
+          rt: stateObj.dropbox.refreshToken || '',
+          ak: stateObj.dropbox.appKey || '',
+          as: stateObj.dropbox.appSecret || '',
+          f: stateObj.dropbox.folderPath || '/MIV_Farm_Records',
+          a: stateObj.dropbox.autoSync !== false ? 1 : 0,
+          r: stateObj.role || 'user'
+        };
+        if (compact.t || compact.rt) {
+          const encoded = encodeHashPayload(compact);
+          if (encoded) {
+            history.replaceState(null, '', '#miv=' + encoded);
+          }
+        } else if (window.location.hash.startsWith('#miv=')) {
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+      } catch (e) {}
+    }
+
+    function deepMergeState(saved) {
+      if (!saved || typeof saved !== 'object') return JSON.parse(JSON.stringify(DEFAULT_STATE));
+      const mergedGroups = Array.isArray(saved.groups) && saved.groups.length > 0 ? saved.groups : DEFAULT_STATE.groups;
+      const defaultGroupId = mergedGroups[0]?.id || 'g1';
+      const mergedHouses = (Array.isArray(saved.houses) ? saved.houses : DEFAULT_STATE.houses).map(h => ({
+        ...h,
+        groupId: h.groupId || defaultGroupId
+      }));
+      const houseGroupMap = Object.fromEntries(mergedHouses.map(h => [h.id, h.groupId]));
+      const mergedRecords = (Array.isArray(saved.records) ? saved.records : DEFAULT_STATE.records).map(r => ({
+        ...r,
+        groupId: r.groupId || houseGroupMap[r.houseId] || defaultGroupId
+      }));
+
+      // Standardize every house to the 3 shift selections: Morning Shift, Night Shift, Supervisor
+      const shiftTemplates = ['Morning Shift', 'Night Shift', 'Supervisor'];
+      const existingWorkers = Array.isArray(saved.workers) ? saved.workers : [];
+      const standardizedWorkers = [];
+      mergedHouses.forEach(h => {
+        shiftTemplates.forEach((roleName, idx) => {
+          const match = existingWorkers.find(w => w.houseId === h.id && w.name === roleName);
+          standardizedWorkers.push(match || {
+            id: `w-${h.id}-${idx + 1}`,
+            name: roleName,
+            houseId: h.id
+          });
+        });
+      });
+
+      return {
+        ...JSON.parse(JSON.stringify(DEFAULT_STATE)),
+        ...saved,
+        security: { ...DEFAULT_STATE.security, ...(saved.security || {}) },
+        cycle: { ...DEFAULT_STATE.cycle, ...(saved.cycle || {}) },
+        dropbox: { ...DEFAULT_STATE.dropbox, ...(saved.dropbox || {}) },
+        groups: mergedGroups,
+        houses: mergedHouses,
+        feedTypes: Array.isArray(saved.feedTypes) ? saved.feedTypes : DEFAULT_STATE.feedTypes,
+        workers: standardizedWorkers,
+        records: mergedRecords,
+        notifications: Array.isArray(saved.notifications) ? saved.notifications : DEFAULT_STATE.notifications
+      };
+    }
+
+    // Default Initial Seed Data (4 Farm Groups + 1 Admin)
+    const DEFAULT_STATE = {
+      role: 'user', // 'user' | 'admin'
+      activeTab: 'input', // 'input' | 'summary' | 'reports' | 'admin' | 'history'
+      security: {
+        adminPin: '1234',
+        logsPin: '1234'
+      },
+      cycle: {
+        name: 'Cycle 14 (60-Day Batch)',
+        startDate: getRelativeDateStr(-18),
+        durationDays: 60
+      },
+      groups: [
+        { id: 'g1', name: 'Group A', code: 'GRP-A', cycleName: 'Cycle 14A', startDate: getRelativeDateStr(-18), durationDays: 60 },
+        { id: 'g2', name: 'Group B', code: 'GRP-B', cycleName: 'Cycle 14B', startDate: getRelativeDateStr(-14), durationDays: 60 },
+        { id: 'g3', name: 'Group C', code: 'GRP-C', cycleName: 'Cycle 14C', startDate: getRelativeDateStr(-10), durationDays: 60 },
+        { id: 'g4', name: 'Group D', code: 'GRP-D', cycleName: 'Cycle 14D', startDate: getRelativeDateStr(-6), durationDays: 60 }
+      ],
+      houses: [
+        { id: 'h1', groupId: 'g1', name: 'House 1', capacity: '18,000 Birds' },
+        { id: 'h2', groupId: 'g1', name: 'House 2', capacity: '18,000 Birds' },
+        { id: 'h3', groupId: 'g2', name: 'House 3', capacity: '20,000 Birds' },
+        { id: 'h4', groupId: 'g2', name: 'House 4', capacity: '20,000 Birds' },
+        { id: 'h5', groupId: 'g3', name: 'House 5', capacity: '20,000 Birds' },
+        { id: 'h6', groupId: 'g4', name: 'House 6', capacity: '22,000 Birds' }
+      ],
+      feedTypes: [
+        { id: 'f1', code: '201C', name: 'Starter Crumble (50kg)', weightKg: 50 },
+        { id: 'f2', code: '202P', name: 'Grower Pellet (50kg)', weightKg: 50 },
+        { id: 'f3', code: '203F', name: 'Finisher Pellet (50kg)', weightKg: 50 }
+      ],
+      workers: [
+        { id: 'w-h1-1', name: 'Morning Shift', houseId: 'h1' },
+        { id: 'w-h1-2', name: 'Night Shift', houseId: 'h1' },
+        { id: 'w-h1-3', name: 'Supervisor', houseId: 'h1' },
+        { id: 'w-h2-1', name: 'Morning Shift', houseId: 'h2' },
+        { id: 'w-h2-2', name: 'Night Shift', houseId: 'h2' },
+        { id: 'w-h2-3', name: 'Supervisor', houseId: 'h2' },
+        { id: 'w-h3-1', name: 'Morning Shift', houseId: 'h3' },
+        { id: 'w-h3-2', name: 'Night Shift', houseId: 'h3' },
+        { id: 'w-h3-3', name: 'Supervisor', houseId: 'h3' },
+        { id: 'w-h4-1', name: 'Morning Shift', houseId: 'h4' },
+        { id: 'w-h4-2', name: 'Night Shift', houseId: 'h4' },
+        { id: 'w-h4-3', name: 'Supervisor', houseId: 'h4' },
+        { id: 'w-h5-1', name: 'Morning Shift', houseId: 'h5' },
+        { id: 'w-h5-2', name: 'Night Shift', houseId: 'h5' },
+        { id: 'w-h5-3', name: 'Supervisor', houseId: 'h5' },
+        { id: 'w-h6-1', name: 'Morning Shift', houseId: 'h6' },
+        { id: 'w-h6-2', name: 'Night Shift', houseId: 'h6' },
+        { id: 'w-h6-3', name: 'Supervisor', houseId: 'h6' }
+      ],
+      records: [
+        {
+          id: 'rec-101',
+          datetime: `${getRelativeDateStr(-4)}T07:30`,
+          entryType: 'input',
+          groupId: 'g1',
+          houseId: 'h1',
+          workerId: 'w-h1-1',
+          feedTypeId: 'f1',
+          bags: 120,
+          doNumber: 'DO-88410',
+          lorryNumber: 'NCE 4512',
+          synced: true
+        },
+        {
+          id: 'rec-102',
+          datetime: `${getRelativeDateStr(-4)}T16:15`,
+          entryType: 'output',
+          groupId: 'g1',
+          houseId: 'h1',
+          workerId: 'w-h1-2',
+          feedTypeId: 'f1',
+          bags: 28,
+          doNumber: '',
+          lorryNumber: '',
+          synced: true
+        },
+        {
+          id: 'rec-103',
+          datetime: `${getRelativeDateStr(-3)}T08:00`,
+          entryType: 'input',
+          groupId: 'g1',
+          houseId: 'h2',
+          workerId: 'w-h2-1',
+          feedTypeId: 'f2',
+          bags: 150,
+          doNumber: 'DO-88455',
+          lorryNumber: 'JQV 9021',
+          synced: true
+        },
+        {
+          id: 'rec-104',
+          datetime: `${getRelativeDateStr(-2)}T17:00`,
+          entryType: 'output',
+          groupId: 'g1',
+          houseId: 'h2',
+          workerId: 'w-h2-3',
+          feedTypeId: 'f2',
+          bags: 36,
+          doNumber: '',
+          lorryNumber: '',
+          synced: true
+        },
+        {
+          id: 'rec-105',
+          datetime: `${getRelativeDateStr(-1)}T07:45`,
+          entryType: 'output',
+          groupId: 'g3',
+          houseId: 'h5',
+          workerId: 'w-h5-1',
+          feedTypeId: 'f2',
+          bags: 34,
+          doNumber: '',
+          lorryNumber: '',
+          synced: true
+        },
+        {
+          id: 'rec-106',
+          datetime: `${getRelativeDateStr(-1)}T08:20`,
+          entryType: 'output',
+          groupId: 'g2',
+          houseId: 'h3',
+          workerId: 'w-h3-1',
+          feedTypeId: 'f2',
+          bags: 42,
+          doNumber: '',
+          lorryNumber: '',
+          synced: true
+        },
+        {
+          id: 'rec-107',
+          datetime: `${getRelativeDateStr(0)}T07:15`,
+          entryType: 'input',
+          groupId: 'g2',
+          houseId: 'h4',
+          workerId: 'w-h4-1',
+          feedTypeId: 'f3',
+          bags: 140,
+          doNumber: 'DO-88902',
+          lorryNumber: 'WXY 7734',
+          synced: true
+        },
+        {
+          id: 'rec-108',
+          datetime: `${getRelativeDateStr(0)}T09:10`,
+          entryType: 'output',
+          groupId: 'g2',
+          houseId: 'h4',
+          workerId: 'w-h4-3',
+          feedTypeId: 'f3',
+          bags: 38,
+          doNumber: '',
+          lorryNumber: '',
+          synced: true
+        }
+      ],
+      notifications: [
+        {
+          id: 'n1',
+          title: '[Group B] House 4 • 38 Bags Hopper Input',
+          detail: 'Supervisor logged Finisher Pellet (50kg)',
+          time: 'Today, 09:10 AM',
+          unread: true
+        },
+        {
+          id: 'n2',
+          title: '[Group B] House 4 • 140 Bags Delivery',
+          detail: 'DO-88902 • Lorry WXY 7734',
+          time: 'Today, 07:15 AM',
+          unread: false
+        }
+      ],
+      dropbox: {
+        accessToken: '',
+        refreshToken: '',
+        appKey: '',
+        appSecret: '',
+        tokenExpiresAt: 0,
+        folderPath: '/MIV_Farm_Records',
+        autoSync: true,
+        lastSyncTime: null,
+        lastSyncStatus: 'local',
+        lastErrorCode: '',
+        lastErrorDetail: ''
+      }
+    };
+
+    function loadState() {
+      let baseState = null;
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) baseState = deepMergeState(JSON.parse(raw));
+      } catch (e) {}
+
+      if (!baseState) {
+        try {
+          if (window.name && window.name.startsWith('MIV_STATE:')) {
+            const parsed = JSON.parse(window.name.slice('MIV_STATE:'.length));
+            baseState = deepMergeState(parsed);
+          }
+        } catch (e) {}
+      }
+
+      if (!baseState) {
+        baseState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+      }
+
+      const hashCfg = readUrlHashConfig();
+      if (hashCfg && (hashCfg.t || hashCfg.rt)) {
+        if (hashCfg.t) baseState.dropbox.accessToken = hashCfg.t;
+        if (hashCfg.rt) baseState.dropbox.refreshToken = hashCfg.rt;
+        if (hashCfg.ak) baseState.dropbox.appKey = hashCfg.ak;
+        if (hashCfg.as) baseState.dropbox.appSecret = hashCfg.as;
+        if (hashCfg.f) baseState.dropbox.folderPath = hashCfg.f;
+        baseState.dropbox.autoSync = hashCfg.a !== 0;
+        baseState.dropbox.lastSyncStatus = 'connected';
+        if (hashCfg.r) {
+          baseState.role = hashCfg.r;
+          baseState.activeTab = hashCfg.r === 'admin' ? 'summary' : 'input';
+        }
+      }
+
+      return baseState;
+    }
+
+    function saveState() {
+      const serialized = JSON.stringify(appState);
+      try {
+        localStorage.setItem(STORAGE_KEY, serialized);
+      } catch (e) {}
+      try {
+        window.name = 'MIV_STATE:' + serialized;
+      } catch (e) {}
+      syncUrlHashConfig(appState);
+      writeIDBState(serialized);
+      writeCacheApiState(serialized);
+    }
+
+    function getDropboxDatabaseFilePath() {
+      const raw = (appState.dropbox?.folderPath || '/MIV_Farm_Records').trim().replace(/\/+$/, '');
+      if (!raw) return '/MIV_Farm_Records/miv_farm_database.json';
+      if (raw.toLowerCase().endsWith('.json')) return raw.startsWith('/') ? raw : '/' + raw;
+      return `${raw.startsWith('/') ? raw : '/' + raw}/miv_farm_database.json`;
+    }
+
+    async function hydrateDurableStateOnBoot() {
+      // Handle OAuth2 PKCE redirect code return if present in URL query
+      await completeDropboxPkceIfPresent();
+
+      let restoredRaw = null;
+      try {
+        restoredRaw = localStorage.getItem(STORAGE_KEY);
+      } catch (e) {}
+
+      if (!restoredRaw) {
+        restoredRaw = await readIDBState();
+      }
+      if (!restoredRaw) {
+        restoredRaw = await readCacheApiState();
+      }
+
+      const hashCfg = readUrlHashConfig();
+      let didRestore = false;
+
+      if (restoredRaw) {
+        try {
+          const parsed = JSON.parse(restoredRaw);
+          if (parsed && typeof parsed === 'object') {
+            appState = deepMergeState(parsed);
+            didRestore = true;
+          }
+        } catch (e) {}
+      }
+
+      if (hashCfg && (hashCfg.t || hashCfg.rt)) {
+        if (hashCfg.t) appState.dropbox.accessToken = hashCfg.t;
+        if (hashCfg.rt) appState.dropbox.refreshToken = hashCfg.rt;
+        if (hashCfg.ak) appState.dropbox.appKey = hashCfg.ak;
+        if (hashCfg.as) appState.dropbox.appSecret = hashCfg.as;
+        if (hashCfg.f) appState.dropbox.folderPath = hashCfg.f;
+        appState.dropbox.autoSync = hashCfg.a !== 0;
+        appState.dropbox.lastSyncStatus = 'connected';
+        didRestore = true;
+      }
+
+      if (didRestore) {
+        saveState();
+        updateDropboxStatusUI();
+        renderApp();
+      }
+
+      if (hasDropboxCredentials()) {
+        // Automatically pull directly from /MIV_Farm_Records/miv_farm_database.json whenever the app opens
+        await pullFromDropbox(true, true);
+        const hasUnsynced = appState.records.some(r => r.synced === false);
+        if (hasUnsynced) {
+          await syncToDropbox(true);
+        }
+      }
+
+      startBackgroundMultiDevicePolling();
+    }
+
+    // Date & 60-Day Cycle Calculation Helpers
+    function getCurrentLocalDateTimeInput() {
+      const now = new Date();
+      const offsetMs = now.getTimezoneOffset() * 60000;
+      return new Date(now.getTime() - offsetMs).toISOString().slice(0, 16);
+    }
+
+    function formatDisplayDateTime(dtStr) {
+      if (!dtStr) return '';
+      const d = new Date(dtStr);
+      if (isNaN(d.getTime())) return dtStr;
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ', ' +
+        d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatShortDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function getCycleDayInfo(cycleObj = null) {
+      const target = cycleObj || appState.cycle;
+      const start = new Date((target.startDate || getRelativeDateStr(0)) + 'T00:00:00');
+      const now = new Date();
+      const durationDays = parseInt(target.durationDays) || 60;
+      const diffDays = Math.floor((now - start) / (1000 * 60 * 60 * 24)) + 1;
+      const currentDay = Math.max(1, Math.min(durationDays, isNaN(diffDays) ? 1 : diffDays));
+      const pct = Math.min(100, Math.max(4, Math.round((currentDay / durationDays) * 100)));
+      const endDate = new Date(start.getTime() + (durationDays - 1) * 86400000);
+      const endDateStr = !isNaN(endDate.getTime()) ? endDate.toISOString().split('T')[0] : getRelativeDateStr(60);
+      return { currentDay, durationDays, pct, endDateStr };
+    }
+
+    let appState = loadState();
+    let pendingDeleteRecordId = null;
+
+    // Form Draft State for Jotform-style Daily Input (By Selected Group)
+    let formDraft = {
+      groupId: appState.groups[0]?.id || 'g1',
+      entryType: 'output', // 'output' (Hopper Input) | 'input' (Delivery)
+      deliveryUnit: 'bags', // 'bags' | 'silo' (1 Ton = 20 Bags, up to 30 Ton)
+      siloTon: 10,
+      hopperSiloTon: 0,
+      houseId: appState.houses[0]?.id || 'h1',
+      workerId: '',
+      feedTypeId: appState.feedTypes[0]?.id || 'f1',
+      bags: 25,
+      datetime: getCurrentLocalDateTimeInput(),
+      doNumber: '',
+      lorryNumber: ''
+    };
+
+    // Report Filters State
+    let summaryGroupFilter = 'ALL'; // 'ALL' or groupId
+    let reportFilters = {
+      subTab: 'house-ledger', // 'house-ledger' | 'delivery-log'
+      groupId: 'ALL',
+      houseId: appState.houses[0]?.id || 'h1',
+      fromDate: getRelativeDateStr(-7),
+      toDate: getRelativeDateStr(0),
+      deliveryFromDate: getRelativeDateStr(-14),
+      deliveryToDate: getRelativeDateStr(0),
+      deliveryFeedId: 'ALL'
+    };
+
+    // Admin Setup Sub-tab
+    let adminSubTab = 'groups'; // 'groups' | 'houses' | 'workers' | 'feeds' | 'cycle'
+
+    // =========================================================================
+    // 3. DROPBOX CONTENT API V2 INTEGRATION (OAUTH2 PKCE, RETRY & MULTI-DEVICE)
+    // =========================================================================
+    let dropboxSyncInFlight = false;
+    let multiDevicePollTimer = null;
+
+    function hasDropboxCredentials() {
+      const dbx = appState.dropbox || {};
+      return Boolean((dbx.accessToken && dbx.accessToken.trim()) || (dbx.refreshToken && dbx.refreshToken.trim() && dbx.appKey && dbx.appKey.trim()));
+    }
+
+    async function fetchWithRetry(url, options, maxRetries = 3) {
+      let attempt = 0;
+      let delayMs = 800;
+      while (true) {
+        try {
+          const res = await fetch(url, options);
+          if (res.status === 429 || (res.status >= 500 && res.status <= 599)) {
+            if (attempt < maxRetries) {
+              attempt++;
+              await new Promise(r => setTimeout(r, delayMs));
+              delayMs *= 2;
+              continue;
+            }
+          }
+          return res;
+        } catch (err) {
+          if (attempt < maxRetries) {
+            attempt++;
+            await new Promise(r => setTimeout(r, delayMs));
+            delayMs *= 2;
+            continue;
+          }
+          throw err;
+        }
+      }
+    }
+
+    async function refreshDropboxAccessToken(force = false) {
+      const dbx = appState.dropbox;
+      if (!dbx.refreshToken || !dbx.appKey) {
+        return (dbx.accessToken || '').trim();
+      }
+      const now = Date.now();
+      if (!force && dbx.accessToken && dbx.tokenExpiresAt && now < (dbx.tokenExpiresAt - 120000)) {
+        return dbx.accessToken.trim();
+      }
+
+      const paramsObj = {
+        grant_type: 'refresh_token',
+        refresh_token: dbx.refreshToken.trim(),
+        client_id: dbx.appKey.trim()
+      };
+      if (dbx.appSecret && dbx.appSecret.trim()) {
+        paramsObj.client_secret = dbx.appSecret.trim();
+      }
+
+      const body = new URLSearchParams(paramsObj);
+
+      const res = await fetchWithRetry('https://api.dropboxapi.com/oauth2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+      }, 3);
+
+      if (!res.ok) {
+        const errTxt = await res.text();
+        throw new Error(`OAuth2 Refresh Failed (${res.status}): ${errTxt}`);
+      }
+
+      const tokenData = await res.json();
+      if (tokenData && tokenData.access_token) {
+        dbx.accessToken = tokenData.access_token;
+        const expiresInSec = Number(tokenData.expires_in || 14400);
+        dbx.tokenExpiresAt = Date.now() + (expiresInSec * 1000);
+        dbx.lastSyncStatus = 'connected';
+        dbx.lastErrorCode = '';
+        dbx.lastErrorDetail = '';
+        saveState();
+        return dbx.accessToken;
+      }
+      return (dbx.accessToken || '').trim();
+    }
+
+    async function getValidDropboxBearerToken(forceRefresh = false) {
+      const dbx = appState.dropbox;
+      if (dbx.refreshToken && dbx.refreshToken.trim() && dbx.appKey && dbx.appKey.trim()) {
+        return await refreshDropboxAccessToken(forceRefresh);
+      }
+      return (dbx.accessToken || '').trim();
+    }
+
+    function generatePkceVerifier() {
+      const arr = new Uint8Array(48);
+      crypto.getRandomValues(arr);
+      return btoa(String.fromCharCode(...arr)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    async function sha256Base64Url(plain) {
+      const data = new TextEncoder().encode(plain);
+      const digest = await crypto.subtle.digest('SHA-256', data);
+      return btoa(String.fromCharCode(...new Uint8Array(digest))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    async function startDropboxPkceOAuth() {
+      const appKeyInput = (document.getElementById('dbx-appkey-input')?.value || appState.dropbox.appKey || '').trim();
+      if (!appKeyInput) {
+        showSnackbar('Enter your Dropbox App Key first', 'alert-circle');
+        return;
+      }
+      appState.dropbox.appKey = appKeyInput;
+      appState.dropbox.folderPath = (document.getElementById('dbx-folder-input')?.value || appState.dropbox.folderPath || '/MIV_Farm_Records').trim();
+      saveState();
+
+      const verifier = generatePkceVerifier();
+      const challenge = await sha256Base64Url(verifier);
+      try {
+        sessionStorage.setItem('MIV_DBX_PKCE_VERIFIER', verifier);
+        localStorage.setItem('MIV_DBX_PKCE_VERIFIER', verifier);
+      } catch (e) {}
+
+      const redirectUri = window.location.origin + window.location.pathname;
+      const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${encodeURIComponent(appKeyInput)}&response_type=code&token_access_type=offline&code_challenge=${encodeURIComponent(challenge)}&code_challenge_method=S256&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      window.location.href = authUrl;
+    }
+
+    async function completeDropboxPkceIfPresent() {
+      try {
+        const params = new URLSearchParams(window.location.search || '');
+        const code = params.get('code');
+        if (!code) return;
+
+        let verifier = '';
+        try {
+          verifier = sessionStorage.getItem('MIV_DBX_PKCE_VERIFIER') || localStorage.getItem('MIV_DBX_PKCE_VERIFIER') || '';
+        } catch (e) {}
+
+        const appKey = (appState.dropbox.appKey || '').trim();
+        if (!verifier || !appKey) return;
+
+        const redirectUri = window.location.origin + window.location.pathname;
+        const body = new URLSearchParams({
+          code,
+          grant_type: 'authorization_code',
+          client_id: appKey,
+          code_verifier: verifier,
+          redirect_uri: redirectUri
+        });
+
+        const res = await fetch('https://api.dropboxapi.com/oauth2/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          appState.dropbox.accessToken = data.access_token || '';
+          if (data.refresh_token) appState.dropbox.refreshToken = data.refresh_token;
+          appState.dropbox.tokenExpiresAt = Date.now() + ((Number(data.expires_in || 14400)) * 1000);
+          appState.dropbox.lastSyncStatus = 'connected';
+          saveState();
+          history.replaceState(null, '', window.location.pathname);
+          syncUrlHashConfig(appState);
+          showSnackbar('Permanent Dropbox OAuth2 Refresh Token linked!', 'check-circle-2');
+        }
+      } catch (e) {}
+    }
+
+    function mergeCloudAndLocalStates(localSt, cloudSt) {
+      const merged = deepMergeState({
+        ...localSt,
+        cycle: cloudSt.cycle || localSt.cycle,
+        groups: cloudSt.groups || localSt.groups,
+        houses: cloudSt.houses || localSt.houses,
+        feedTypes: cloudSt.feedTypes || localSt.feedTypes,
+        workers: cloudSt.workers || localSt.workers
+      });
+
+      // Merge records by ID, keeping local unsynced edits/additions intact while bringing in new multi-device entries
+      const recordMap = new Map();
+      (Array.isArray(cloudSt.records) ? cloudSt.records : []).forEach(r => {
+        recordMap.set(r.id, { ...r, synced: true });
+      });
+      (Array.isArray(localSt.records) ? localSt.records : []).forEach(r => {
+        if (!recordMap.has(r.id) || r.synced === false) {
+          recordMap.set(r.id, r);
+        }
+      });
+
+      merged.records = Array.from(recordMap.values()).sort((a, b) => (b.datetime || '').localeCompare(a.datetime || ''));
+      merged.dropbox = localSt.dropbox;
+      merged.role = localSt.role;
+      merged.activeTab = localSt.activeTab;
+      merged.notifications = localSt.notifications;
+      return merged;
+    }
+
+    function startBackgroundMultiDevicePolling() {
+      if (multiDevicePollTimer) clearInterval(multiDevicePollTimer);
+      multiDevicePollTimer = setInterval(async () => {
+        if (document.hidden || dropboxSyncInFlight || !hasDropboxCredentials()) return;
+        const hasUnsynced = appState.records.some(r => r.synced === false);
+        if (hasUnsynced) {
+          await syncToDropbox(true);
+        } else {
+          await pullFromDropbox(true);
+        }
+      }, 25000);
+
+      document.addEventListener('visibilitychange', async () => {
+        if (!document.hidden && hasDropboxCredentials() && !dropboxSyncInFlight) {
+          const hasUnsynced = appState.records.some(r => r.synced === false);
+          if (hasUnsynced) await syncToDropbox(true);
+          await pullFromDropbox(true);
+        }
+      });
+
+      window.addEventListener('online', async () => {
+        if (hasDropboxCredentials() && !dropboxSyncInFlight) {
+          await syncToDropbox(true);
+          await pullFromDropbox(true);
+        }
+      });
+    }
+
+    function updateDropboxStatusUI() {
+      const dot = document.getElementById('dropbox-dot');
+      const text = document.getElementById('dropbox-pill-text');
+      const hasToken = hasDropboxCredentials();
+
+      if (!hasToken) {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+        text.textContent = 'Local Mode';
+        return;
+      }
+
+      if (appState.dropbox.lastSyncStatus === 'syncing') {
+        dot.className = 'w-2 h-2 rounded-full bg-blue-400 animate-ping';
+        text.textContent = 'Syncing...';
+      } else if (appState.dropbox.lastSyncStatus === 'error') {
+        dot.className = 'w-2 h-2 rounded-full bg-rose-400';
+        text.textContent = 'Sync Retry';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+        text.textContent = 'Dropbox Live';
+      }
+    }
+
+    function parseDropboxErrorMessage(errStatus, rawText) {
+      let parsedMsg = rawText || `HTTP ${errStatus}`;
+      try {
+        const errJson = JSON.parse(rawText);
+        if (errJson && errJson.error_summary) {
+          parsedMsg = errJson.error_summary;
+        }
+      } catch (e) {}
+
+      if (parsedMsg.includes('missing_scope') || parsedMsg.includes('files.content.write') || parsedMsg.includes('files.content.read')) {
+        return {
+          isScopeError: true,
+          code: `HTTP ${errStatus} • missing_scope`,
+          raw: parsedMsg,
+          shortMessage: 'Dropbox Token Missing Scope: Enable files.content.write & files.content.read, then click Generate for a new token.'
+        };
+      }
+      if (parsedMsg.includes('invalid_access_token') || parsedMsg.includes('expired_access_token')) {
+        return {
+          isScopeError: false,
+          code: `HTTP ${errStatus} • token_expired`,
+          raw: parsedMsg,
+          shortMessage: 'Dropbox token expired (short-lived tokens last 4 hrs) or invalid. Click Generate in Dropbox App Console for a new token.'
+        };
+      }
+      return {
+        isScopeError: false,
+        code: `HTTP ${errStatus}`,
+        raw: parsedMsg,
+        shortMessage: parsedMsg
+      };
+    }
+
+    function renderDropboxDiagnosticBox() {
+      const box = document.getElementById('dbx-exact-error-box');
+      const titleEl = document.getElementById('dbx-exact-error-title');
+      const codeEl = document.getElementById('dbx-exact-error-code');
+      const detailEl = document.getElementById('dbx-exact-error-detail');
+      if (!box || !titleEl || !codeEl || !detailEl) return;
+
+      if (appState.dropbox.lastSyncStatus === 'error' && appState.dropbox.lastErrorDetail) {
+        box.className = 'rounded-2xl p-3 border border-rose-300 bg-rose-50 text-rose-950 text-[11px] space-y-1';
+        titleEl.textContent = 'Last Sync Error Reason:';
+        codeEl.textContent = appState.dropbox.lastErrorCode || 'ERROR';
+        detailEl.textContent = appState.dropbox.lastErrorDetail;
+        box.classList.remove('hidden');
+      } else if (appState.dropbox.lastSyncStatus === 'connected' && appState.dropbox.lastSyncTime) {
+        box.className = 'rounded-2xl p-3 border border-emerald-300 bg-emerald-50 text-emerald-950 text-[11px] space-y-1';
+        titleEl.textContent = 'Dropbox Connection Verified';
+        codeEl.textContent = 'HTTP 200 OK';
+        detailEl.textContent = `Successfully synced to ${(appState.dropbox.folderPath || '/MIV_Farm_Records').replace(/\/+$/, '')}/miv_farm_database.json at ${appState.dropbox.lastSyncTime}`;
+        box.classList.remove('hidden');
+      } else {
+        box.classList.add('hidden');
+      }
+    }
+
+    function toggleDropboxTokenVisibility() {
+      const inp = document.getElementById('dbx-token-input');
+      const icon = document.getElementById('dbx-token-eye-icon');
+      if (!inp) return;
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        if (icon) icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        inp.type = 'password';
+        if (icon) icon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    }
+
+    async function testDropboxConnection() {
+      const tokenInput = (document.getElementById('dbx-token-input')?.value || '').trim();
+      const appKeyInput = (document.getElementById('dbx-appkey-input')?.value || '').trim();
+      const appSecretInput = (document.getElementById('dbx-appsecret-input')?.value || '').trim();
+      const refreshInput = (document.getElementById('dbx-refresh-input')?.value || '').trim();
+      if (tokenInput) appState.dropbox.accessToken = tokenInput;
+      if (appKeyInput) appState.dropbox.appKey = appKeyInput;
+      if (appSecretInput) appState.dropbox.appSecret = appSecretInput;
+      if (refreshInput) appState.dropbox.refreshToken = refreshInput;
+      appState.dropbox.folderPath = (document.getElementById('dbx-folder-input')?.value || '/MIV_Farm_Records').trim() || '/MIV_Farm_Records';
+
+      if (!hasDropboxCredentials()) {
+        showSnackbar('Paste a Refresh Token + App Key or Direct Access Token first', 'alert-circle');
+        return;
+      }
+      saveState();
+
+      const stateLabel = document.getElementById('dbx-sync-state-label');
+      if (stateLabel) {
+        stateLabel.textContent = 'Testing token...';
+        stateLabel.className = 'font-semibold text-blue-600';
+      }
+
+      try {
+        const token = await getValidDropboxBearerToken(true);
+        const res = await fetchWithRetry('https://api.dropboxapi.com/2/users/get_current_account', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }, 2);
+        if (!res.ok) {
+          const errText = await res.text();
+          const parsedErr = parseDropboxErrorMessage(res.status, errText);
+          appState.dropbox.lastSyncStatus = 'error';
+          appState.dropbox.lastErrorCode = parsedErr.code;
+          appState.dropbox.lastErrorDetail = parsedErr.shortMessage + (parsedErr.raw !== parsedErr.shortMessage ? ` (${parsedErr.raw})` : '');
+          saveState();
+          updateDropboxStatusUI();
+          renderDropboxDiagnosticBox();
+          if (stateLabel) {
+            stateLabel.textContent = 'Token Invalid / Expired';
+            stateLabel.className = 'font-semibold text-rose-600';
+          }
+          showSnackbar(parsedErr.shortMessage, 'alert-circle');
+          return;
+        }
+        const acct = await res.json();
+        const acctName = acct?.name?.display_name || acct?.email || 'Dropbox Account';
+        showSnackbar(`Token valid (${acctName})! Testing file upload...`, 'check-circle-2');
+        await syncToDropbox(false);
+        renderDropboxDiagnosticBox();
+      } catch (err) {
+        appState.dropbox.lastSyncStatus = 'error';
+        appState.dropbox.lastErrorCode = 'NETWORK / AUTH';
+        appState.dropbox.lastErrorDetail = `Unable to verify Dropbox token (${err?.message || 'Network blocked'}).`;
+        saveState();
+        updateDropboxStatusUI();
+        renderDropboxDiagnosticBox();
+        showSnackbar('Error reaching Dropbox API', 'wifi-off');
+      }
+    }
+
+    function hideDropboxScopeAlert() {
+      const alertBox = document.getElementById('dropbox-scope-alert');
+      if (alertBox) alertBox.classList.add('hidden');
+    }
+
+    async function syncToDropbox(silent = false) {
+      const dbFilePath = getDropboxDatabaseFilePath();
+
+      if (!hasDropboxCredentials()) {
+        appState.dropbox.lastSyncStatus = 'local';
+        updateDropboxStatusUI();
+        if (!silent) showSnackbar('Saved locally (Add Dropbox token for cloud sync)', 'hard-drive');
+        return false;
+      }
+
+      if (dropboxSyncInFlight) return false;
+      dropboxSyncInFlight = true;
+      appState.dropbox.lastSyncStatus = 'syncing';
+      updateDropboxStatusUI();
+
+      try {
+        let token = await getValidDropboxBearerToken(false);
+
+        const executeUpload = async (bearer) => {
+          const payload = {
+            app: 'MIV Farm Daily Feeds Record',
+            updatedAt: new Date().toISOString(),
+            cycle: appState.cycle,
+            groups: appState.groups,
+            houses: appState.houses,
+            feedTypes: appState.feedTypes,
+            workers: appState.workers,
+            records: appState.records
+          };
+          return await fetchWithRetry('https://content.dropboxapi.com/2/files/upload', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${bearer}`,
+              'Dropbox-API-Arg': JSON.stringify({
+                path: dbFilePath,
+                mode: 'overwrite',
+                autorename: false,
+                mute: true
+              }),
+              'Content-Type': 'application/octet-stream'
+            },
+            body: JSON.stringify(payload, null, 2)
+          }, 3);
+        };
+
+        let res = await executeUpload(token);
+
+        // Auto-renew via refresh_token on 401 and retry once
+        if (res.status === 401 && appState.dropbox.refreshToken && appState.dropbox.appKey) {
+          token = await getValidDropboxBearerToken(true);
+          res = await executeUpload(token);
+        }
+
+        if (!res.ok) {
+          const errText = await res.text();
+          const parsedErr = parseDropboxErrorMessage(res.status, errText);
+          appState.dropbox.lastSyncStatus = 'error';
+          appState.dropbox.lastErrorCode = parsedErr.code;
+          appState.dropbox.lastErrorDetail = parsedErr.shortMessage + (parsedErr.raw !== parsedErr.shortMessage ? ` (${parsedErr.raw})` : '');
+          saveState();
+          updateDropboxStatusUI();
+          renderDropboxDiagnosticBox();
+          const stateLabel = document.getElementById('dbx-sync-state-label');
+          if (stateLabel) {
+            stateLabel.textContent = parsedErr.isScopeError ? 'Missing App Scope' : 'Auth / Sync Error';
+            stateLabel.className = 'font-semibold text-rose-600';
+          }
+          if (parsedErr.isScopeError) {
+            showDropboxScopeAlert(parsedErr.shortMessage);
+          }
+          if (!silent) {
+            showSnackbar(parsedErr.shortMessage, 'alert-circle');
+          }
+          return false;
+        }
+
+        // Mark all records synced
+        appState.records.forEach(r => r.synced = true);
+        appState.dropbox.lastSyncStatus = 'connected';
+        appState.dropbox.lastErrorCode = '';
+        appState.dropbox.lastErrorDetail = '';
+        appState.dropbox.lastSyncTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        hideDropboxScopeAlert();
+        saveState();
+        updateDropboxStatusUI();
+        renderDropboxDiagnosticBox();
+        const stateLabel = document.getElementById('dbx-sync-state-label');
+        if (stateLabel) {
+          stateLabel.textContent = 'Connected & Synced';
+          stateLabel.className = 'font-semibold text-emerald-600';
+        }
+        const lastSyncEl = document.getElementById('dbx-last-sync');
+        if (lastSyncEl) lastSyncEl.textContent = appState.dropbox.lastSyncTime;
+        if (!silent) showSnackbar('Synced to Dropbox Content API v2', 'cloud-check');
+        return true;
+      } catch (err) {
+        appState.dropbox.lastSyncStatus = 'error';
+        appState.dropbox.lastErrorCode = 'NETWORK / CORS';
+        appState.dropbox.lastErrorDetail = `Fetch failed: ${err?.message || 'Unable to reach content.dropboxapi.com'}`;
+        saveState();
+        updateDropboxStatusUI();
+        renderDropboxDiagnosticBox();
+        if (!silent) showSnackbar('Saved locally; network unreachable for Dropbox', 'wifi-off');
+        return false;
+      } finally {
+        dropboxSyncInFlight = false;
+      }
+    }
+
+    async function uploadCsvReportToDropbox(filename, csvContent) {
+      const folder = (appState.dropbox.folderPath || '/MIV_Farm_Records').replace(/\/+$/, '');
+      if (!hasDropboxCredentials()) {
+        showSnackbar('CSV downloaded locally (No Dropbox token configured)', 'download');
+        return;
+      }
+
+      try {
+        const token = await getValidDropboxBearerToken(false);
+        const res = await fetchWithRetry('https://content.dropboxapi.com/2/files/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Dropbox-API-Arg': JSON.stringify({
+              path: `${folder}/reports/${filename}`,
+              mode: 'overwrite',
+              autorename: true,
+              mute: false
+            }),
+            'Content-Type': 'application/octet-stream'
+          },
+          body: csvContent
+        }, 3);
+        if (!res.ok) {
+          const errText = await res.text();
+          const parsedErr = parseDropboxErrorMessage(res.status, errText);
+          if (parsedErr.isScopeError) {
+            showDropboxScopeAlert(parsedErr.shortMessage);
+          }
+          showSnackbar(parsedErr.shortMessage, 'alert-circle');
+          return;
+        }
+        showSnackbar(`Report uploaded to Dropbox (${filename})`, 'cloud-check');
+      } catch (err) {
+        showSnackbar('CSV downloaded locally (Dropbox unreachable)', 'download');
+      }
+    }
+
+    async function pullFromDropbox(silent = false, isBootOpen = false) {
+      const dbFilePath = getDropboxDatabaseFilePath();
+      if (!hasDropboxCredentials()) {
+        if (!silent) showSnackbar('Enter a Dropbox Access Token or Refresh Token first', 'alert-circle');
+        return;
+      }
+
+      if (dropboxSyncInFlight) return;
+      dropboxSyncInFlight = true;
+      appState.dropbox.lastSyncStatus = 'syncing';
+      updateDropboxStatusUI();
+
+      try {
+        let token = await getValidDropboxBearerToken(false);
+        const executeDownload = async (bearer) => {
+          return await fetchWithRetry('https://content.dropboxapi.com/2/files/download', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${bearer}`,
+              'Dropbox-API-Arg': JSON.stringify({
+                path: dbFilePath
+              })
+            }
+          }, 3);
+        };
+
+        let res = await executeDownload(token);
+
+        if (res.status === 401 && appState.dropbox.refreshToken && appState.dropbox.appKey) {
+          token = await getValidDropboxBearerToken(true);
+          res = await executeDownload(token);
+        }
+
+        if (!res.ok) {
+          const errText = await res.text();
+          const parsedErr = parseDropboxErrorMessage(res.status, errText);
+          if (parsedErr.isScopeError) {
+            appState.dropbox.lastSyncStatus = 'error';
+            updateDropboxStatusUI();
+            showDropboxScopeAlert(parsedErr.shortMessage);
+            if (!silent) showSnackbar(parsedErr.shortMessage, 'alert-circle');
+            return;
+          }
+          if (res.status === 409) {
+            dropboxSyncInFlight = false;
+            if (silent) {
+              await syncToDropbox(true);
+            } else {
+              showSnackbar(`No existing database at ${dbFilePath} yet. Click "Save & Push" first.`, 'info');
+            }
+            return;
+          }
+          appState.dropbox.lastSyncStatus = 'error';
+          appState.dropbox.lastErrorCode = parsedErr.code;
+          appState.dropbox.lastErrorDetail = parsedErr.shortMessage;
+          saveState();
+          updateDropboxStatusUI();
+          renderDropboxDiagnosticBox();
+          if (!silent) showSnackbar(parsedErr.shortMessage, 'alert-circle');
+          return;
+        }
+
+        const cloudData = await res.json();
+        if (cloudData && typeof cloudData === 'object') {
+          appState = mergeCloudAndLocalStates(appState, cloudData);
+          appState.dropbox.lastSyncStatus = 'connected';
+          appState.dropbox.lastErrorCode = '';
+          appState.dropbox.lastErrorDetail = '';
+          appState.dropbox.lastSyncTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          hideDropboxScopeAlert();
+          saveState();
+          renderApp();
+          renderDropboxDiagnosticBox();
+          if (isBootOpen) {
+            showSnackbar(`Auto-loaded latest data from ${dbFilePath}`, 'cloud-download');
+          } else if (!silent) {
+            showSnackbar('Cloud database pulled & merged!', 'cloud-download');
+          }
+        }
+      } catch (err) {
+        appState.dropbox.lastSyncStatus = 'error';
+        appState.dropbox.lastErrorCode = 'NETWORK / PULL';
+        appState.dropbox.lastErrorDetail = `Unable to pull from Dropbox (${err?.message || 'Network error'}).`;
+        saveState();
+        updateDropboxStatusUI();
+        renderDropboxDiagnosticBox();
+        if (!silent) showSnackbar('Network error pulling from Dropbox', 'wifi-off');
+      } finally {
+        dropboxSyncInFlight = false;
+      }
+    }
+
+    function showDropboxScopeAlert(msg) {
+      const alertBox = document.getElementById('dropbox-scope-alert');
+      const msgEl = document.getElementById('dropbox-scope-msg');
+      if (msgEl && msg) msgEl.textContent = msg;
+      if (alertBox) alertBox.classList.remove('hidden');
+    }
+
+    function updateDropboxTargetPreview(val) {
+      const el = document.getElementById('dbx-target-preview');
+      if (!el) return;
+      const cleanRaw = (val || '/MIV_Farm_Records').trim().replace(/\/+$/, '') || '/MIV_Farm_Records';
+      if (cleanRaw.toLowerCase().endsWith('.json')) {
+        el.textContent = cleanRaw.startsWith('/') ? cleanRaw : '/' + cleanRaw;
+      } else {
+        el.textContent = `${cleanRaw.startsWith('/') ? cleanRaw : '/' + cleanRaw}/miv_farm_database.json`;
+      }
+    }
+
+    // =========================================================================
+    // 4. DROPBOX MODAL & NOTIFICATIONS DRAWER HANDLERS
+    // =========================================================================
+    function openDropboxModal() {
+      const dbx = appState.dropbox || {};
+      const refreshEl = document.getElementById('dbx-refresh-input');
+      const appKeyEl = document.getElementById('dbx-appkey-input');
+      const appSecretEl = document.getElementById('dbx-appsecret-input');
+      const tokenEl = document.getElementById('dbx-token-input');
+      const folderEl = document.getElementById('dbx-folder-input');
+      const autoSyncEl = document.getElementById('dbx-autosync-toggle');
+      const lastSyncEl = document.getElementById('dbx-last-sync');
+      const stateLabelEl = document.getElementById('dbx-sync-state-label');
+
+      if (refreshEl) refreshEl.value = dbx.refreshToken || '';
+      if (appKeyEl) appKeyEl.value = dbx.appKey || '';
+      if (appSecretEl) appSecretEl.value = dbx.appSecret || '';
+      if (tokenEl) tokenEl.value = dbx.accessToken || '';
+      if (folderEl) {
+        folderEl.value = dbx.folderPath || '/MIV_Farm_Records';
+        updateDropboxTargetPreview(folderEl.value);
+      }
+      if (autoSyncEl) autoSyncEl.checked = dbx.autoSync !== false;
+      if (lastSyncEl) lastSyncEl.textContent = dbx.lastSyncTime || 'Never';
+
+      if (stateLabelEl) {
+        if (!hasDropboxCredentials()) {
+          stateLabelEl.textContent = 'Local cache active';
+          stateLabelEl.className = 'font-semibold text-amber-600';
+        } else if (dbx.lastSyncStatus === 'error') {
+          stateLabelEl.textContent = 'Sync Error';
+          stateLabelEl.className = 'font-semibold text-rose-600';
+        } else {
+          stateLabelEl.textContent = 'Cloud sync configured';
+          stateLabelEl.className = 'font-semibold text-emerald-600';
+        }
+      }
+
+      renderDropboxDiagnosticBox();
+      document.getElementById('dropbox-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeDropboxModal() {
+      document.getElementById('dropbox-modal').classList.add('hidden');
+    }
+
+    async function saveDropboxConfig() {
+      appState.dropbox.refreshToken = (document.getElementById('dbx-refresh-input')?.value || '').trim();
+      appState.dropbox.appKey = (document.getElementById('dbx-appkey-input')?.value || '').trim();
+      appState.dropbox.appSecret = (document.getElementById('dbx-appsecret-input')?.value || '').trim();
+      appState.dropbox.accessToken = (document.getElementById('dbx-token-input')?.value || '').trim();
+      appState.dropbox.folderPath = (document.getElementById('dbx-folder-input')?.value || '/MIV_Farm_Records').trim() || '/MIV_Farm_Records';
+      appState.dropbox.autoSync = Boolean(document.getElementById('dbx-autosync-toggle')?.checked);
+      saveState();
+      updateDropboxStatusUI();
+      await syncToDropbox(false);
+    }
+
+    function copyAutoLoginUrl() {
+      const compact = {
+        t: appState.dropbox.accessToken || '',
+        rt: appState.dropbox.refreshToken || '',
+        ak: appState.dropbox.appKey || '',
+        as: appState.dropbox.appSecret || '',
+        f: appState.dropbox.folderPath || '/MIV_Farm_Records',
+        a: appState.dropbox.autoSync !== false ? 1 : 0,
+        r: 'user'
+      };
+      const encoded = encodeHashPayload(compact);
+      const baseUrl = window.location.origin + window.location.pathname;
+      const syncUrl = encoded ? `${baseUrl}#miv=${encoded}` : baseUrl;
+
+      const tempInput = document.createElement('textarea');
+      tempInput.value = syncUrl;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        showSnackbar('1-Tap New Device Sync Link copied!', 'link');
+      } catch (e) {
+        showSnackbar('Unable to copy link', 'alert-circle');
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function exportJsonBackup() {
+      const payload = {
+        app: 'MIV Farm Daily Feeds Record',
+        exportedAt: new Date().toISOString(),
+        cycle: appState.cycle,
+        groups: appState.groups,
+        houses: appState.houses,
+        feedTypes: appState.feedTypes,
+        workers: appState.workers,
+        records: appState.records
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `miv_farm_database_${getRelativeDateStr(0)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showSnackbar('JSON backup exported', 'file-json');
+    }
+
+    let headsUpDismissTimer = null;
+    function triggerHeadsUpNotification(title, detail) {
+      const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      appState.notifications.unshift({
+        id: 'notif-' + Date.now(),
+        title,
+        detail,
+        time: `Today, ${timeStr}`,
+        unread: true
+      });
+      if (appState.notifications.length > 40) {
+        appState.notifications = appState.notifications.slice(0, 40);
+      }
+      saveState();
+      updateNotificationBadge();
+
+      const banner = document.getElementById('heads-up-notification');
+      const titleEl = document.getElementById('heads-up-title');
+      const bodyEl = document.getElementById('heads-up-body');
+      if (banner && titleEl && bodyEl) {
+        titleEl.textContent = title;
+        bodyEl.textContent = detail;
+        banner.classList.remove('hidden');
+        lucide.createIcons();
+        if (headsUpDismissTimer) clearTimeout(headsUpDismissTimer);
+        headsUpDismissTimer = setTimeout(dismissHeadsUpNotification, 4500);
+      }
+    }
+
+    function dismissHeadsUpNotification() {
+      const banner = document.getElementById('heads-up-notification');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    function updateNotificationBadge() {
+      const badge = document.getElementById('notif-badge');
+      if (!badge) return;
+      const unreadCount = (appState.notifications || []).filter(n => n.unread).length;
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount > 9 ? '9+' : String(unreadCount);
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function openNotificationsModal() {
+      appState.notifications.forEach(n => n.unread = false);
+      saveState();
+      updateNotificationBadge();
+
+      const listEl = document.getElementById('notifications-list');
+      if (appState.notifications.length === 0) {
+        listEl.innerHTML = `
+          <div class="text-center py-8 text-slate-400">
+            <p class="text-xs font-semibold">No submission alerts yet</p>
+          </div>`;
+      } else {
+        listEl.innerHTML = appState.notifications.map(n => `
+          <div class="p-3 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-start gap-2.5">
+            <div class="w-7 h-7 rounded-xl bg-forest-100 text-forest-800 flex items-center justify-center shrink-0 mt-0.5">
+              <i data-lucide="check-circle" class="w-4 h-4"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-2">
+                <p class="text-xs font-bold text-slate-900 truncate">${escapeHtml(n.title)}</p>
+                <span class="text-[10px] text-slate-400 shrink-0">${escapeHtml(n.time)}</span>
+              </div>
+              <p class="text-[11px] text-slate-600 mt-0.5">${escapeHtml(n.detail)}</p>
+            </div>
+          </div>
+        `).join('');
+      }
+      document.getElementById('notifications-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeNotificationsModal() {
+      document.getElementById('notifications-modal').classList.add('hidden');
+    }
+
+    function clearAllNotifications() {
+      appState.notifications = [];
+      saveState();
+      updateNotificationBadge();
+      openNotificationsModal();
+    }
+
+    // =========================================================================
+    // 5. PASSWORD PROTECTION & ROLE SWITCHING (USER VS ADMIN)
+    // =========================================================================
+    let pendingPinSuccessCallback = null;
+
+    function requestPasswordAccess(title, subtitle, expectedPin, onSuccess) {
+      pendingPinSuccessCallback = { expectedPin: String(expectedPin || '1234'), onSuccess };
+      document.getElementById('pin-modal-title').textContent = title;
+      document.getElementById('pin-modal-subtitle').textContent = subtitle;
+      const inp = document.getElementById('pin-modal-input');
+      inp.value = '';
+      document.getElementById('pin-modal-error').classList.add('hidden');
+      document.getElementById('pin-auth-modal').classList.remove('hidden');
+      lucide.createIcons();
+      setTimeout(() => inp.focus(), 60);
+    }
+
+    function closePinModal() {
+      document.getElementById('pin-auth-modal').classList.add('hidden');
+      pendingPinSuccessCallback = null;
+    }
+
+    function submitPinVerification(e) {
+      e.preventDefault();
+      if (!pendingPinSuccessCallback) return;
+      const entered = (document.getElementById('pin-modal-input').value || '').trim();
+      if (entered === pendingPinSuccessCallback.expectedPin) {
+        const cb = pendingPinSuccessCallback.onSuccess;
+        closePinModal();
+        if (typeof cb === 'function') cb();
+      } else {
+        document.getElementById('pin-modal-error').classList.remove('hidden');
+        const inp = document.getElementById('pin-modal-input');
+        inp.value = '';
+        inp.focus();
+      }
+    }
+
+    function applyRoleSwitch(role) {
+      appState.role = role;
+      if (role === 'user') {
+        if (!['input', 'history', 'summary'].includes(appState.activeTab)) {
+          appState.activeTab = 'input';
+        }
+      } else {
+        if (!['summary', 'reports', 'admin', 'input'].includes(appState.activeTab)) {
+          appState.activeTab = 'summary';
+        }
+      }
+      saveState();
+      renderApp();
+    }
+
+    function switchRole(role) {
+      if (role === 'admin' && appState.role !== 'admin') {
+        requestPasswordAccess(
+          'Farm Manager (Admin) Access',
+          'Enter Admin password to unlock management & reports',
+          appState.security?.adminPin || '1234',
+          () => applyRoleSwitch('admin')
+        );
+        return;
+      }
+      applyRoleSwitch(role);
+    }
+
+    function switchTab(tab) {
+      appState.activeTab = tab;
+      saveState();
+      renderApp();
+    }
+
+    // =========================================================================
+    // 6. VIEW RENDERERS
+    // =========================================================================
+    function renderApp() {
+      // Update Header Role Buttons
+      const userBtn = document.getElementById('role-btn-user');
+      const adminBtn = document.getElementById('role-btn-admin');
+      if (appState.role === 'user') {
+        userBtn.className = 'tactile-btn flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-bold transition bg-white text-forest-950 shadow-sm';
+        adminBtn.className = 'tactile-btn flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-bold transition text-forest-200 hover:text-white';
+      } else {
+        adminBtn.className = 'tactile-btn flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-bold transition bg-amber-400 text-forest-950 shadow-sm';
+        userBtn.className = 'tactile-btn flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-bold transition text-forest-200 hover:text-white';
+      }
+
+      // Header Cycle Subtitle
+      const cycleInfo = getCycleDayInfo();
+      document.getElementById('header-cycle-label').textContent = `${appState.groups.length} Groups • ${appState.cycle.name} • Day ${cycleInfo.currentDay}/${cycleInfo.durationDays}`;
+
+      // Render Active Viewport
+      const viewport = document.getElementById('app-viewport');
+      if (appState.activeTab === 'input') {
+        viewport.innerHTML = renderDailyInputFormView();
+      } else if (appState.activeTab === 'summary') {
+        viewport.innerHTML = renderExecutiveSummaryView();
+      } else if (appState.activeTab === 'reports') {
+        viewport.innerHTML = renderReportsView();
+      } else if (appState.activeTab === 'admin') {
+        viewport.innerHTML = renderAdminSettingsView();
+      } else if (appState.activeTab === 'history') {
+        viewport.innerHTML = renderHistoryView();
+      }
+
+      // Render Bottom Navigation
+      renderBottomNav();
+      updateDropboxStatusUI();
+      updateNotificationBadge();
+      lucide.createIcons();
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW A: JOTFORM-STYLE DAILY INPUT CARD (BY SELECTED GROUP)
+    // -------------------------------------------------------------------------
+    function renderDailyInputFormView() {
+      // Ensure selected group exists
+      if (!appState.groups.some(g => g.id === formDraft.groupId)) {
+        formDraft.groupId = appState.groups[0]?.id || 'g1';
+      }
+      const selectedGroup = appState.groups.find(g => g.id === formDraft.groupId) || appState.groups[0];
+      const groupCycleInfo = getCycleDayInfo(selectedGroup);
+
+      // Filter houses belonging to selected group
+      const groupHouses = appState.houses.filter(h => h.groupId === formDraft.groupId);
+      if (groupHouses.length > 0 && !groupHouses.some(h => h.id === formDraft.houseId)) {
+        formDraft.houseId = groupHouses[0].id;
+      }
+
+      // Filter workers assigned to the selected house (or all workers in selected group)
+      const groupHouseIds = new Set(groupHouses.map(h => h.id));
+      const assignedWorkers = appState.workers.filter(w => w.houseId === formDraft.houseId);
+      const groupWorkers = appState.workers.filter(w => groupHouseIds.has(w.houseId));
+      const workerOptions = assignedWorkers.length > 0 ? assignedWorkers : (groupWorkers.length > 0 ? groupWorkers : appState.workers);
+      if (!workerOptions.some(w => w.id === formDraft.workerId)) {
+        formDraft.workerId = workerOptions[0]?.id || '';
+      }
+
+      const todayStr = getRelativeDateStr(0);
+      const isDelivery = formDraft.entryType === 'input';
+      const isSiloDelivery = isDelivery && formDraft.deliveryUnit === 'silo';
+      const equivalentSiloBags = Math.round((parseFloat(formDraft.siloTon) || 0) * 20);
+
+      return `
+        <!-- Jotform-Style Daily Input Card -->
+        <form onsubmit="handleDailyFeedSubmit(event)" class="bg-white rounded-3xl shadow-sm border border-slate-200/90 overflow-hidden">
+          <!-- Form Header Accent -->
+          <div class="bg-gradient-to-r from-forest-800 to-forest-700 px-5 py-4 text-white">
+            <div class="flex items-center justify-between">
+              <span class="px-2.5 py-0.5 rounded-full bg-white/15 text-[10px] font-bold uppercase tracking-wider">${escapeHtml(selectedGroup?.name || 'Group')} • Day ${groupCycleInfo.currentDay}/60</span>
+              <span class="text-[11px] text-forest-100 font-mono">${todayStr}</span>
+            </div>
+            <h2 class="text-base font-extrabold mt-1.5">MIV Daily Feed Entry Form</h2>
+            <p class="text-xs text-forest-100/90 mt-0.5">Select your group &amp; house below to record daily feed bags</p>
+          </div>
+
+          <div class="p-4 space-y-4">
+            <!-- Step 1: Select Farm Group (4 Groups) -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-bold text-slate-700">1. Select Farm Group *</label>
+                <span class="text-[10px] font-bold text-forest-700">${escapeHtml(selectedGroup?.cycleName || '60-Day Cycle')}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-2">
+                ${appState.groups.map(g => {
+                  const isSelected = formDraft.groupId === g.id;
+                  const hCount = appState.houses.filter(h => h.groupId === g.id).length;
+                  return `
+                    <button type="button" onclick="selectFormGroup('${g.id}')"
+                      class="tactile-btn py-2.5 px-3 rounded-2xl border-2 text-left transition ${isSelected
+                        ? 'border-forest-700 bg-forest-800 text-white shadow-sm'
+                        : 'border-slate-200 bg-slate-50/80 text-slate-700 hover:border-forest-300'}">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs font-extrabold">${escapeHtml(g.name)}</span>
+                        <span class="text-[9px] font-mono px-1.5 py-0.5 rounded ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'}">${escapeHtml(g.code || '')}</span>
+                      </div>
+                      <span class="block text-[10px] mt-0.5 ${isSelected ? 'text-forest-200' : 'text-slate-400'}">${hCount} House${hCount === 1 ? '' : 's'}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Step 2: Transaction Type Toggle -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">2. Record Type *</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" onclick="setFormEntryType('output')"
+                  class="tactile-btn py-2.5 px-3 rounded-2xl border-2 text-left flex items-center gap-2 transition ${formDraft.entryType === 'output'
+                    ? 'border-amber-500 bg-amber-50/90 text-amber-950 shadow-2xs'
+                    : 'border-slate-200 bg-slate-50 text-slate-600'}">
+                  <div class="w-7 h-7 rounded-xl ${formDraft.entryType === 'output' ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-500'} flex items-center justify-center shrink-0">
+                    <i data-lucide="flame" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <p class="text-xs font-extrabold leading-tight">Hopper Input</p>
+                    <p class="text-[10px] opacity-75">Daily house feed</p>
+                  </div>
+                </button>
+
+                <button type="button" onclick="setFormEntryType('input')"
+                  class="tactile-btn py-2.5 px-3 rounded-2xl border-2 text-left flex items-center gap-2 transition ${formDraft.entryType === 'input'
+                    ? 'border-forest-600 bg-forest-50/90 text-forest-950 shadow-2xs'
+                    : 'border-slate-200 bg-slate-50 text-slate-600'}">
+                  <div class="w-7 h-7 rounded-xl ${formDraft.entryType === 'input' ? 'bg-forest-600 text-white' : 'bg-slate-200 text-slate-500'} flex items-center justify-center shrink-0">
+                    <i data-lucide="package-plus" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <p class="text-xs font-extrabold leading-tight">Delivery</p>
+                    <p class="text-[10px] opacity-75">Lorry DO / Silo</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Step 3: Quick-Tap House Selector Pills (Hidden when Delivery is selected) -->
+            ${!isDelivery ? `
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-bold text-slate-700">3. Select House No (${escapeHtml(selectedGroup?.name || '')}) *</label>
+                  <span class="text-[10px] font-semibold text-forest-700">Tap pill</span>
+                </div>
+                ${groupHouses.length === 0 ? `
+                  <div class="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900">
+                    No houses assigned to ${escapeHtml(selectedGroup?.name || 'this group')} yet. Admin can assign houses in Farm Setup.
+                  </div>
+                ` : `
+                  <div class="flex flex-wrap gap-2">
+                    ${groupHouses.map(h => {
+                      const active = formDraft.houseId === h.id;
+                      return `
+                        <button type="button" onclick="selectFormHouse('${h.id}')"
+                          class="tactile-btn px-3.5 py-2.5 rounded-full text-xs font-extrabold border transition flex items-center gap-1.5 ${active
+                            ? 'bg-forest-800 text-white border-forest-800 shadow-sm'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-forest-400'}">
+                          <i data-lucide="home" class="w-3.5 h-3.5 ${active ? 'text-amber-400' : 'text-slate-400'}"></i>
+                          <span>${escapeHtml(h.name)}</span>
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                `}
+              </div>
+            ` : ''}
+
+            <!-- Worker / Shift Selection -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">${isDelivery ? '3' : '4'}. Worker / Shift Name *</label>
+              <div class="relative">
+                <select id="input-worker" onchange="formDraft.workerId = this.value" required
+                  class="w-full appearance-none bg-slate-50 border border-slate-200 focus:border-forest-600 focus:bg-white rounded-2xl px-3.5 py-3 text-xs font-bold text-slate-800 outline-none">
+                  ${workerOptions.map(w => `
+                    <option value="${w.id}" ${w.id === formDraft.workerId ? 'selected' : ''}>
+                      ${escapeHtml(w.name)}
+                    </option>
+                  `).join('')}
+                </select>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 absolute right-3.5 top-3.5 pointer-events-none"></i>
+              </div>
+            </div>
+
+            <!-- Feeds Name / Bag Type (Big & Bold Code Only) -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">${isDelivery ? '4' : '5'}. Feeds Name / Bag Type *</label>
+              <div class="grid grid-cols-3 gap-2">
+                ${appState.feedTypes.map(ft => {
+                  const selected = formDraft.feedTypeId === ft.id;
+                  return `
+                    <button type="button" onclick="selectFormFeedType('${ft.id}')"
+                      class="tactile-btn py-3.5 px-2 rounded-2xl border-2 text-center transition flex items-center justify-center ${selected
+                        ? 'border-forest-700 bg-forest-50 text-forest-950 shadow-2xs'
+                        : 'border-slate-200 bg-slate-50/70 text-slate-700'}">
+                      <span class="font-mono text-lg font-extrabold tracking-tight ${selected ? 'text-forest-900' : 'text-slate-800'}">${escapeHtml(ft.code)}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Date & Time -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1.5">${isDelivery ? '5' : '6'}. Date &amp; Time *</label>
+              <input type="datetime-local" id="input-datetime" value="${formDraft.datetime}"
+                onchange="formDraft.datetime = this.value" required
+                class="w-full bg-slate-50 border border-slate-200 focus:border-forest-600 focus:bg-white rounded-2xl px-3.5 py-2.5 text-xs font-mono font-semibold text-slate-800 outline-none" />
+            </div>
+
+            <!-- Delivery Mode Toggle (Shown only when Delivery is selected) -->
+            ${isDelivery ? `
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">6. Delivery Mode *</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button type="button" onclick="setDeliveryUnit('bags')"
+                    class="tactile-btn py-2.5 px-3 rounded-2xl border-2 text-left transition ${formDraft.deliveryUnit === 'bags'
+                      ? 'border-forest-700 bg-forest-50 text-forest-950 shadow-2xs'
+                      : 'border-slate-200 bg-slate-50 text-slate-600'}">
+                    <p class="text-xs font-extrabold">Bag Delivery</p>
+                    <p class="text-[10px] opacity-75">50kg feed bags</p>
+                  </button>
+                  <button type="button" onclick="setDeliveryUnit('silo')"
+                    class="tactile-btn py-2.5 px-3 rounded-2xl border-2 text-left transition ${formDraft.deliveryUnit === 'silo'
+                      ? 'border-amber-500 bg-amber-50 text-amber-950 shadow-2xs'
+                      : 'border-slate-200 bg-slate-50 text-slate-600'}">
+                    <p class="text-xs font-extrabold">Silo Delivery</p>
+                    <p class="text-[10px] opacity-75">1 Ton = 20 Bags</p>
+                  </button>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Quantity Input: Silo Delivery vs Bags -->
+            ${isSiloDelivery ? `
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-bold text-slate-700">7. Silo Delivery *</label>
+                  <span class="text-[10px] font-mono font-bold text-amber-700">1 Ton = 20 Bags</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="adjustSiloTon(-5)" class="tactile-btn w-11 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-sm">-5</button>
+                  <button type="button" onclick="adjustSiloTon(-1)" class="tactile-btn w-11 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-base">-</button>
+                  <div class="flex-1">
+                    <input type="number" id="input-silo-ton" min="0.1" max="30" step="0.1" required value="${formDraft.siloTon}"
+                      oninput="updateSiloTonInput(this.value)"
+                      class="w-full h-12 text-center font-mono text-lg font-extrabold text-amber-900 bg-amber-50/80 border-2 border-amber-500/40 focus:border-amber-600 rounded-2xl outline-none" />
+                  </div>
+                  <button type="button" onclick="adjustSiloTon(1)" class="tactile-btn w-11 h-12 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-base">+</button>
+                  <button type="button" onclick="adjustSiloTon(5)" class="tactile-btn w-11 h-12 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-sm">+5</button>
+                </div>
+                <div id="silo-conversion-badge" class="mt-2 p-2.5 rounded-xl bg-forest-50 border border-forest-200 flex items-center justify-between text-xs">
+                  <span class="font-semibold text-forest-800">Auto-Converted Feed Bags:</span>
+                  <span class="font-mono font-extrabold text-forest-950">${equivalentSiloBags.toLocaleString()} Bags</span>
+                </div>
+              </div>
+            ` : `
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                  ${formDraft.entryType === 'output' ? '7. Total Bags Input to Hopper *' : '7. Total Bags Delivered *'}
+                </label>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="adjustBags(-5)" class="tactile-btn w-11 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-sm">-5</button>
+                  <button type="button" onclick="adjustBags(-1)" class="tactile-btn w-11 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-base">-</button>
+                  <div class="flex-1">
+                    <input type="number" id="input-bags" min="0" max="5000" required value="${formDraft.bags}"
+                      oninput="formDraft.bags = parseInt(this.value) || 0"
+                      class="w-full h-12 text-center font-mono text-lg font-extrabold text-forest-900 bg-forest-50/70 border-2 border-forest-600/30 focus:border-forest-700 rounded-2xl outline-none" />
+                  </div>
+                  <button type="button" onclick="adjustBags(1)" class="tactile-btn w-11 h-12 rounded-2xl bg-forest-100 hover:bg-forest-200 text-forest-900 font-extrabold text-base">+</button>
+                  <button type="button" onclick="adjustBags(5)" class="tactile-btn w-11 h-12 rounded-2xl bg-forest-100 hover:bg-forest-200 text-forest-900 font-extrabold text-sm">+5</button>
+                </div>
+              </div>
+            `}
+
+            <!-- Step 8: Total Silo Input to Hopper (Shown when Hopper Input is selected) -->
+            ${formDraft.entryType === 'output' ? `
+              <div class="pt-2 border-t border-slate-100">
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-xs font-bold text-slate-700">8. Total Silo Input to Hopper</label>
+                  <span class="text-[10px] font-mono font-bold text-amber-700">1 Ton = 20 Bags</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="adjustHopperSiloTon(-1)" class="tactile-btn w-11 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-base">-</button>
+                  <button type="button" onclick="adjustHopperSiloTon(-0.5)" class="tactile-btn w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs">-0.5</button>
+                  <div class="flex-1">
+                    <input type="number" id="input-hopper-silo" min="0" max="30" step="0.1" value="${formDraft.hopperSiloTon}"
+                      oninput="updateHopperSiloInput(this.value)"
+                      class="w-full h-12 text-center font-mono text-lg font-extrabold text-amber-900 bg-amber-50/70 border-2 border-amber-500/40 focus:border-amber-600 rounded-2xl outline-none" />
+                  </div>
+                  <button type="button" onclick="adjustHopperSiloTon(0.5)" class="tactile-btn w-12 h-12 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-xs">+0.5</button>
+                  <button type="button" onclick="adjustHopperSiloTon(1)" class="tactile-btn w-11 h-12 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-base">+</button>
+                </div>
+                <div id="hopper-silo-conversion-badge" class="mt-2 p-2 rounded-xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between text-[11px]">
+                  <span class="font-semibold text-amber-900">Silo Equivalent (× 20):</span>
+                  <span class="font-mono font-extrabold text-amber-950">${Math.round((parseFloat(formDraft.hopperSiloTon) || 0) * 20).toLocaleString()} Bags</span>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Delivery Order & Lorry Inputs (Shown when Delivery is selected) -->
+            ${formDraft.entryType === 'input' ? `
+              <div class="bg-forest-50/70 border border-forest-200/80 rounded-2xl p-3 space-y-2.5">
+                <p class="text-[11px] font-bold text-forest-900 flex items-center gap-1.5">
+                  <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Delivery Details (DO &amp; Lorry)
+                </p>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-600 mb-1">Delivery Order (DO) No</label>
+                    <input type="text" placeholder="e.g. DO-88910" value="${escapeHtml(formDraft.doNumber)}"
+                      oninput="formDraft.doNumber = this.value"
+                      class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-mono font-semibold uppercase outline-none focus:border-forest-600" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-600 mb-1">Lorry No</label>
+                    <input type="text" placeholder="e.g. WXY 1234" value="${escapeHtml(formDraft.lorryNumber)}"
+                      oninput="formDraft.lorryNumber = this.value"
+                      class="w-full bg-white border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-mono font-semibold uppercase outline-none focus:border-forest-600" />
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Submit Button -->
+            <button type="submit"
+              class="tactile-btn w-full py-3.5 px-5 rounded-2xl bg-forest-800 hover:bg-forest-900 text-white font-extrabold text-sm shadow-lg shadow-forest-900/20 flex items-center justify-center gap-2 uppercase tracking-wide">
+              <i data-lucide="send" class="w-4 h-4 text-amber-400"></i>
+              <span>SUBMIT FEED REPORT</span>
+            </button>
+          </div>
+        </form>
+      `;
+    }
+
+    function selectFormGroup(groupId) {
+      formDraft.groupId = groupId;
+      const groupHouses = appState.houses.filter(h => h.groupId === groupId);
+      if (groupHouses.length > 0 && !groupHouses.some(h => h.id === formDraft.houseId)) {
+        formDraft.houseId = groupHouses[0].id;
+      }
+      const assigned = appState.workers.filter(w => w.houseId === formDraft.houseId);
+      if (assigned.length > 0) formDraft.workerId = assigned[0].id;
+      renderApp();
+    }
+
+    function setFormEntryType(type) {
+      formDraft.entryType = type;
+      renderApp();
+    }
+
+    function setDeliveryUnit(unit) {
+      formDraft.deliveryUnit = unit;
+      renderApp();
+    }
+
+    function updateSiloTonInput(rawVal) {
+      let ton = parseFloat(rawVal);
+      if (isNaN(ton) || ton < 0) ton = 0;
+      if (ton > 30) {
+        ton = 30;
+        const inp = document.getElementById('input-silo-ton');
+        if (inp) inp.value = 30;
+      }
+      formDraft.siloTon = ton;
+      const badge = document.getElementById('silo-conversion-badge');
+      if (badge) {
+        badge.innerHTML = `
+          <span class="font-semibold text-forest-800">Auto-Converted Feed Bags:</span>
+          <span class="font-mono font-extrabold text-forest-950">${Math.round(ton * 20).toLocaleString()} Bags</span>
+        `;
+      }
+    }
+
+    function adjustSiloTon(delta) {
+      const current = parseFloat(formDraft.siloTon) || 0;
+      const next = Math.max(0.5, Math.min(30, Math.round((current + delta) * 10) / 10));
+      formDraft.siloTon = next;
+      const inp = document.getElementById('input-silo-ton');
+      if (inp) inp.value = next;
+      updateSiloTonInput(next);
+    }
+
+    function selectFormHouse(houseId) {
+      formDraft.houseId = houseId;
+      const houseObj = appState.houses.find(h => h.id === houseId);
+      if (houseObj && houseObj.groupId) {
+        formDraft.groupId = houseObj.groupId;
+      }
+      const assigned = appState.workers.filter(w => w.houseId === houseId);
+      if (assigned.length > 0) {
+        formDraft.workerId = assigned[0].id;
+      }
+      renderApp();
+    }
+
+    function selectFormFeedType(feedTypeId) {
+      formDraft.feedTypeId = feedTypeId;
+      renderApp();
+    }
+
+    function adjustBags(delta) {
+      const next = Math.max(0, (parseInt(formDraft.bags) || 0) + delta);
+      formDraft.bags = next;
+      const inp = document.getElementById('input-bags');
+      if (inp) inp.value = next;
+    }
+
+    function updateHopperSiloInput(rawVal) {
+      let ton = parseFloat(rawVal);
+      if (isNaN(ton) || ton < 0) ton = 0;
+      if (ton > 30) {
+        ton = 30;
+        const inp = document.getElementById('input-hopper-silo');
+        if (inp) inp.value = 30;
+      }
+      formDraft.hopperSiloTon = ton;
+      const badge = document.getElementById('hopper-silo-conversion-badge');
+      if (badge) {
+        badge.innerHTML = `
+          <span class="font-semibold text-amber-900">Silo Equivalent (× 20):</span>
+          <span class="font-mono font-extrabold text-amber-950">${Math.round(ton * 20).toLocaleString()} Bags</span>
+        `;
+      }
+    }
+
+    function adjustHopperSiloTon(delta) {
+      const current = parseFloat(formDraft.hopperSiloTon) || 0;
+      const next = Math.max(0, Math.min(30, Math.round((current + delta) * 10) / 10));
+      formDraft.hopperSiloTon = next;
+      const inp = document.getElementById('input-hopper-silo');
+      if (inp) inp.value = next;
+      updateHopperSiloInput(next);
+    }
+
+    async function handleDailyFeedSubmit(e) {
+      e.preventDefault();
+      const isSiloDelivery = formDraft.entryType === 'input' && formDraft.deliveryUnit === 'silo';
+      const siloTonVal = isSiloDelivery ? Math.min(30, Math.max(0, parseFloat(formDraft.siloTon) || 0)) : 0;
+      const hopperSiloVal = formDraft.entryType === 'output' ? Math.min(30, Math.max(0, parseFloat(formDraft.hopperSiloTon) || 0)) : 0;
+
+      if (isSiloDelivery && (siloTonVal <= 0 || siloTonVal > 30)) {
+        showSnackbar('Enter valid silo tonnage (0.1 to 30 Ton)', 'alert-circle');
+        return;
+      }
+
+      const directBags = parseInt(formDraft.bags) || 0;
+      const hopperSiloBags = hopperSiloVal > 0 ? Math.round(hopperSiloVal * 20) : 0;
+      const bagsCount = isSiloDelivery
+        ? Math.round(siloTonVal * 20)
+        : (directBags + hopperSiloBags);
+
+      if (!bagsCount || bagsCount <= 0) {
+        showSnackbar('Please enter valid feed bags or silo input', 'alert-circle');
+        return;
+      }
+
+      const groupObj = appState.groups.find(g => g.id === formDraft.groupId);
+      const groupHouses = appState.houses.filter(h => h.groupId === formDraft.groupId);
+      const effectiveHouseId = formDraft.entryType === 'input'
+        ? (groupHouses[0]?.id || formDraft.houseId)
+        : formDraft.houseId;
+      const houseObj = appState.houses.find(h => h.id === effectiveHouseId);
+      const workerObj = appState.workers.find(w => w.id === formDraft.workerId);
+      const feedObj = appState.feedTypes.find(f => f.id === formDraft.feedTypeId);
+
+      const newRecord = {
+        id: 'rec-' + Date.now(),
+        datetime: formDraft.datetime || getCurrentLocalDateTimeInput(),
+        entryType: formDraft.entryType,
+        groupId: houseObj?.groupId || formDraft.groupId,
+        houseId: effectiveHouseId,
+        workerId: formDraft.workerId,
+        feedTypeId: formDraft.feedTypeId,
+        bags: bagsCount,
+        siloTon: isSiloDelivery ? siloTonVal : (hopperSiloVal > 0 ? hopperSiloVal : null),
+        doNumber: formDraft.entryType === 'input' ? (formDraft.doNumber || '').trim() : '',
+        lorryNumber: formDraft.entryType === 'input' ? (formDraft.lorryNumber || '').trim().toUpperCase() : '',
+        synced: false
+      };
+
+      appState.records.unshift(newRecord);
+      saveState();
+
+      const actionLabel = newRecord.entryType === 'output'
+        ? (hopperSiloVal > 0 ? `Hopper Input (Silo ${hopperSiloVal}T)` : 'Hopper Input')
+        : (isSiloDelivery ? `Silo Delivery (${siloTonVal}T)` : 'Delivery');
+      triggerHeadsUpNotification(
+        `[${groupObj?.name || 'Group'}] ${newRecord.entryType === 'output' ? (houseObj?.name || 'House') + ' • ' : ''}${bagsCount} Bags ${actionLabel}`,
+        `${workerObj?.name || 'Shift'} • ${feedObj?.code || 'Feed'}`
+      );
+
+      // Reset draft timestamp, hopper silo & delivery numbers
+      formDraft.datetime = getCurrentLocalDateTimeInput();
+      formDraft.hopperSiloTon = 0;
+      formDraft.doNumber = '';
+      formDraft.lorryNumber = '';
+      renderApp();
+
+      // Auto-sync to Dropbox if enabled
+      if (appState.dropbox.autoSync && hasDropboxCredentials()) {
+        await syncToDropbox(false);
+      } else {
+        showSnackbar('Daily feed entry recorded!', 'check-circle-2');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW B: EXECUTIVE 60-DAY CYCLE SUMMARY BY GROUP
+    // -------------------------------------------------------------------------
+    function setSummaryGroupFilter(groupId) {
+      summaryGroupFilter = groupId;
+      renderApp();
+    }
+
+    function renderExecutiveSummaryView() {
+      const selectedGroup = summaryGroupFilter !== 'ALL'
+        ? appState.groups.find(g => g.id === summaryGroupFilter)
+        : null;
+      const cycleInfo = getCycleDayInfo(selectedGroup || appState.cycle);
+
+      const getRecordGroupId = (r) => r.groupId || appState.houses.find(h => h.id === r.houseId)?.groupId;
+
+      const filteredHouses = summaryGroupFilter === 'ALL'
+        ? appState.houses
+        : appState.houses.filter(h => h.groupId === summaryGroupFilter);
+
+      const filteredRecords = summaryGroupFilter === 'ALL'
+        ? appState.records
+        : appState.records.filter(r => getRecordGroupId(r) === summaryGroupFilter);
+
+      const totalConsumedAll = filteredRecords
+        .filter(r => r.entryType === 'output')
+        .reduce((sum, r) => sum + Number(r.bags || 0), 0);
+
+      const totalDeliveredAll = filteredRecords
+        .filter(r => r.entryType === 'input')
+        .reduce((sum, r) => sum + Number(r.bags || 0), 0);
+
+      const netStoreBalance = totalDeliveredAll - totalConsumedAll;
+
+      return `
+        <!-- Group Selector Pills for Cycle Summary -->
+        <div class="bg-white p-2 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <button onclick="setSummaryGroupFilter('ALL')"
+            class="tactile-btn shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition ${summaryGroupFilter === 'ALL'
+              ? 'bg-forest-800 text-white shadow-2xs'
+              : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}">
+            All 4 Groups
+          </button>
+          ${appState.groups.map(g => {
+            const active = summaryGroupFilter === g.id;
+            return `
+              <button onclick="setSummaryGroupFilter('${g.id}')"
+                class="tactile-btn shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition ${active
+                  ? 'bg-forest-800 text-white shadow-2xs'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}">
+                ${escapeHtml(g.name)}
+              </button>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- 60-Day Cycle Progress Hero Card -->
+        <div class="bg-gradient-to-br from-forest-900 via-forest-800 to-forest-950 text-white p-4 rounded-3xl shadow-md space-y-3">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-widest text-amber-400">
+                ${selectedGroup ? `${escapeHtml(selectedGroup.name)} • Cycle Summary` : 'All Farm Groups • Executive Summary'}
+              </span>
+              <h2 class="text-base font-extrabold mt-0.5">${escapeHtml(selectedGroup ? selectedGroup.cycleName : appState.cycle.name)}</h2>
+              <p class="text-[11px] text-forest-200 mt-0.5">${formatShortDate((selectedGroup || appState.cycle).startDate)} &rarr; ${formatShortDate(cycleInfo.endDateStr)}</p>
+            </div>
+            <div class="bg-white/10 border border-white/15 px-3 py-1.5 rounded-2xl text-right">
+              <p class="font-mono text-sm font-extrabold text-amber-300">Day ${cycleInfo.currentDay}</p>
+              <p class="text-[10px] text-forest-200">of ${cycleInfo.durationDays} Days</p>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="w-full h-2.5 bg-forest-950/80 rounded-full overflow-hidden p-0.5">
+            <div class="h-full bg-gradient-to-r from-amber-400 to-emerald-400 rounded-full transition-all" style="width: ${cycleInfo.pct}%"></div>
+          </div>
+
+          <!-- KPI Trio -->
+          <div class="grid grid-cols-3 gap-2 pt-1">
+            <div class="bg-white/10 rounded-2xl p-2.5">
+              <p class="text-[10px] text-forest-200 font-medium">Hopper Consumed</p>
+              <p class="font-mono text-base font-extrabold text-white mt-0.5">${totalConsumedAll.toLocaleString()}</p>
+              <p class="text-[9px] text-amber-300 font-semibold">Bags (60d)</p>
+            </div>
+            <div class="bg-white/10 rounded-2xl p-2.5">
+              <p class="text-[10px] text-forest-200 font-medium">Total Delivered</p>
+              <p class="font-mono text-base font-extrabold text-white mt-0.5">${totalDeliveredAll.toLocaleString()}</p>
+              <p class="text-[9px] text-emerald-300 font-semibold">Bags Stock In</p>
+            </div>
+            <div class="bg-white/10 rounded-2xl p-2.5">
+              <p class="text-[10px] text-forest-200 font-medium">Store Balance</p>
+              <p class="font-mono text-base font-extrabold ${netStoreBalance >= 0 ? 'text-emerald-300' : 'text-rose-300'} mt-0.5">${netStoreBalance.toLocaleString()}</p>
+              <p class="text-[9px] text-forest-200 font-semibold">Remaining</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Group-by-Group Comparison Card (When viewing All Groups) -->
+        ${summaryGroupFilter === 'ALL' ? `
+          <div class="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-2.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-600">Cycle Summary by Group (4 Groups)</h3>
+              <span class="text-[10px] font-semibold text-slate-400">Tap group to filter</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              ${appState.groups.map(g => {
+                const gRecords = appState.records.filter(r => getRecordGroupId(r) === g.id);
+                const gConsumed = gRecords.filter(r => r.entryType === 'output').reduce((s, r) => s + Number(r.bags || 0), 0);
+                const gDelivered = gRecords.filter(r => r.entryType === 'input').reduce((s, r) => s + Number(r.bags || 0), 0);
+                const gBalance = gDelivered - gConsumed;
+                const gInfo = getCycleDayInfo(g);
+                return `
+                  <button type="button" onclick="setSummaryGroupFilter('${g.id}')"
+                    class="tactile-btn p-3 rounded-2xl bg-slate-50 hover:bg-forest-50/70 border border-slate-200/90 text-left space-y-1.5">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-extrabold text-slate-900">${escapeHtml(g.name)}</span>
+                      <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-forest-100 text-forest-800">D${gInfo.currentDay}/60</span>
+                    </div>
+                    <div class="flex items-baseline justify-between">
+                      <span class="text-[10px] text-slate-500">Consumed:</span>
+                      <span class="font-mono text-sm font-extrabold text-amber-700">${gConsumed.toLocaleString()}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-200/70">
+                      <span>In: <strong class="font-mono text-slate-700">${gDelivered}</strong></span>
+                      <span>Bal: <strong class="font-mono ${gBalance >= 0 ? 'text-forest-700' : 'text-rose-600'}">${gBalance}</strong></span>
+                    </div>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Section Title -->
+        <div class="flex items-center justify-between px-1">
+          <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-600">
+            ${selectedGroup ? `${escapeHtml(selectedGroup.name)} Houses (60-Day Cycle)` : 'House Feed Consumption (60-Day Cycle)'}
+          </h3>
+          <span class="text-[11px] font-semibold text-forest-700">${filteredHouses.length} Houses</span>
+        </div>
+
+        <!-- Per-House Executive Cards -->
+        <div class="space-y-3">
+          ${filteredHouses.map(house => {
+            const houseGroup = appState.groups.find(g => g.id === house.groupId);
+            const houseRecords = appState.records.filter(r => r.houseId === house.id);
+            const consumedBags = houseRecords.filter(r => r.entryType === 'output').reduce((s, r) => s + Number(r.bags || 0), 0);
+            const deliveredBags = houseRecords.filter(r => r.entryType === 'input').reduce((s, r) => s + Number(r.bags || 0), 0);
+            const houseBalance = deliveredBags - consumedBags;
+            const dailyAvg = (consumedBags / Math.max(1, cycleInfo.currentDay)).toFixed(1);
+
+            // Feed breakdown per house
+            const feedBreakdown = appState.feedTypes.map(ft => {
+              const ftUsed = houseRecords
+                .filter(r => r.entryType === 'output' && r.feedTypeId === ft.id)
+                .reduce((s, r) => s + Number(r.bags || 0), 0);
+              return { code: ft.code, name: ft.name, used: ftUsed };
+            }).filter(item => item.used > 0);
+
+            return `
+              <div class="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+                <div class="flex items-start justify-between">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-forest-50 border border-forest-200 text-forest-800 flex items-center justify-center font-extrabold text-xs">
+                      ${escapeHtml(house.name.replace('House ', 'H'))}
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-1.5">
+                        <h4 class="text-sm font-extrabold text-slate-900">${escapeHtml(house.name)}</h4>
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-forest-50 text-forest-800 border border-forest-200">${escapeHtml(houseGroup?.name || 'Group')}</span>
+                      </div>
+                      <p class="text-[11px] text-slate-500 mt-0.5">Avg ${dailyAvg} bags/day</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <span class="font-mono text-lg font-extrabold text-amber-600">${consumedBags.toLocaleString()}</span>
+                    <span class="block text-[10px] font-bold uppercase text-slate-400">Bags Consumed</span>
+                  </div>
+                </div>
+
+                <!-- Feed Bag Breakdown Pills -->
+                <div class="flex flex-wrap gap-1.5">
+                  ${feedBreakdown.length > 0 ? feedBreakdown.map(fb => `
+                    <span class="px-2.5 py-1 rounded-xl bg-slate-100 text-slate-700 text-[11px] font-semibold">
+                      <strong class="font-mono text-forest-800">${escapeHtml(fb.code)}:</strong> ${fb.used} bags
+                    </span>
+                  `).join('') : `<span class="text-[11px] text-slate-400 italic">No hopper output recorded in this cycle yet</span>`}
+                </div>
+
+                <!-- Footer Stock In vs Balance -->
+                <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                  <span class="text-slate-500">Stock In: <strong class="font-mono text-slate-800">${deliveredBags}</strong> bags</span>
+                  <span class="text-slate-500">House Balance: <strong class="font-mono ${houseBalance >= 0 ? 'text-forest-700' : 'text-rose-600'}">${houseBalance}</strong> bags</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW C: AUTOMATED FARM REPORTS GENERATOR (ADMIN)
+    // -------------------------------------------------------------------------
+    function renderReportsView() {
+      const filteredHouses = reportFilters.groupId === 'ALL'
+        ? appState.houses
+        : appState.houses.filter(h => h.groupId === reportFilters.groupId);
+      if (filteredHouses.length > 0 && !filteredHouses.some(h => h.id === reportFilters.houseId)) {
+        reportFilters.houseId = filteredHouses[0].id;
+      }
+
+      return `
+        <!-- Report Type Selector Pills -->
+        <div class="bg-white p-1.5 rounded-2xl border border-slate-200 grid grid-cols-2 gap-1.5 shadow-2xs">
+          <button onclick="setReportSubTab('house-ledger')"
+            class="tactile-btn py-2 px-2.5 rounded-xl text-xs font-extrabold transition ${reportFilters.subTab === 'house-ledger'
+              ? 'bg-forest-800 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-50'}">
+            House Daily Ledger
+          </button>
+          <button onclick="setReportSubTab('delivery-log')"
+            class="tactile-btn py-2 px-2.5 rounded-xl text-xs font-extrabold transition ${reportFilters.subTab === 'delivery-log'
+              ? 'bg-forest-800 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-50'}">
+            Delivery (DO) Report
+          </button>
+        </div>
+
+        ${reportFilters.subTab === 'house-ledger' ? renderHouseDailyLedgerReport(filteredHouses) : renderDeliveryInputReport()}
+      `;
+    }
+
+    function setReportSubTab(tab) {
+      reportFilters.subTab = tab;
+      renderApp();
+    }
+
+    function renderHouseDailyLedgerReport(filteredHouses) {
+      const selectedHouse = appState.houses.find(h => h.id === reportFilters.houseId) || filteredHouses[0] || appState.houses[0];
+      const selectedHouseGroup = appState.groups.find(g => g.id === selectedHouse?.groupId);
+      const fromD = reportFilters.fromDate;
+      const toD = reportFilters.toDate;
+
+      // Filter records for selected house
+      const houseRecords = appState.records
+        .filter(r => r.houseId === selectedHouse?.id)
+        .sort((a, b) => a.datetime.localeCompare(b.datetime));
+
+      // Compute opening running balance prior to fromDate
+      let runningTotal = 0;
+      houseRecords.forEach(r => {
+        const dOnly = r.datetime.split('T')[0];
+        if (dOnly < fromD) {
+          runningTotal += (r.entryType === 'input' ? Number(r.bags) : -Number(r.bags));
+        }
+      });
+
+      // Group records inside [fromDate, toDate] by Date + Feed Bag Type
+      const inRange = houseRecords.filter(r => {
+        const dOnly = r.datetime.split('T')[0];
+        return dOnly >= fromD && dOnly <= toD;
+      });
+
+      const groupedMap = new Map();
+      inRange.forEach(r => {
+        const dateOnly = r.datetime.split('T')[0];
+        const key = `${dateOnly}__${r.feedTypeId}`;
+        if (!groupedMap.has(key)) {
+          groupedMap.set(key, {
+            date: dateOnly,
+            feedTypeId: r.feedTypeId,
+            bagInput: 0,
+            bagOutput: 0
+          });
+        }
+        const row = groupedMap.get(key);
+        if (r.entryType === 'input') row.bagInput += Number(r.bags || 0);
+        else row.bagOutput += Number(r.bags || 0);
+      });
+
+      const ledgerRows = Array.from(groupedMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+      let periodTotalIn = 0;
+      let periodTotalOut = 0;
+      ledgerRows.forEach(row => {
+        periodTotalIn += row.bagInput;
+        periodTotalOut += row.bagOutput;
+        runningTotal = runningTotal + row.bagInput - row.bagOutput;
+        row.runningTotal = runningTotal;
+      });
+
+      return `
+        <!-- Filter Controls Card -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-extrabold text-slate-900">House Daily Feed &amp; Running Total</h3>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-forest-50 text-forest-800 border border-forest-200">${escapeHtml(selectedHouseGroup?.name || 'Group')}</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Farm Group</label>
+              <select onchange="reportFilters.groupId = this.value; renderApp()"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800">
+                <option value="ALL" ${reportFilters.groupId === 'ALL' ? 'selected' : ''}>All Groups</option>
+                ${appState.groups.map(g => `<option value="${g.id}" ${g.id === reportFilters.groupId ? 'selected' : ''}>${escapeHtml(g.name)}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">House Number</label>
+              <select onchange="reportFilters.houseId = this.value; renderApp()"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800">
+                ${filteredHouses.map(h => `<option value="${h.id}" ${h.id === selectedHouse?.id ? 'selected' : ''}>${escapeHtml(h.name)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">From Date</label>
+              <input type="date" value="${fromD}" onchange="reportFilters.fromDate = this.value; renderApp()"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-mono font-semibold text-slate-800" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">To Date</label>
+              <input type="date" value="${toD}" onchange="reportFilters.toDate = this.value; renderApp()"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-mono font-semibold text-slate-800" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <button onclick="exportHouseLedgerCsv()"
+              class="tactile-btn py-2.5 px-3 rounded-xl bg-forest-800 hover:bg-forest-900 text-white text-xs font-bold flex items-center justify-center gap-1.5">
+              <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Download &amp; Sync CSV
+            </button>
+            <button onclick="syncToDropbox(false)"
+              class="tactile-btn py-2.5 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center justify-center gap-1.5">
+              <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i> Push Dropbox
+            </button>
+          </div>
+        </div>
+
+        <!-- Ledger Summary Strip -->
+        <div class="grid grid-cols-3 gap-2">
+          <div class="bg-white p-2.5 rounded-2xl border border-slate-200 text-center">
+            <p class="text-[10px] font-bold text-slate-400">Period Input</p>
+            <p class="font-mono text-sm font-extrabold text-forest-700 mt-0.5">+${periodTotalIn}</p>
+          </div>
+          <div class="bg-white p-2.5 rounded-2xl border border-slate-200 text-center">
+            <p class="text-[10px] font-bold text-slate-400">Hopper Out</p>
+            <p class="font-mono text-sm font-extrabold text-amber-600 mt-0.5">-${periodTotalOut}</p>
+          </div>
+          <div class="bg-white p-2.5 rounded-2xl border border-slate-200 text-center">
+            <p class="text-[10px] font-bold text-slate-400">Running Bal</p>
+            <p class="font-mono text-sm font-extrabold text-slate-900 mt-0.5">${runningTotal}</p>
+          </div>
+        </div>
+
+        <!-- Data Table Card -->
+        <div class="bg-white rounded-3xl border border-slate-200/90 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-slate-100/90 border-b border-slate-200 text-[10px] font-extrabold uppercase tracking-wider text-slate-600">
+                  <th class="py-2.5 px-3">Date</th>
+                  <th class="py-2.5 px-2">Feed Bag</th>
+                  <th class="py-2.5 px-2 text-right">Bag In</th>
+                  <th class="py-2.5 px-2 text-right">Hopper Out</th>
+                  <th class="py-2.5 px-3 text-right">Running</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-xs">
+                ${ledgerRows.length === 0 ? `
+                  <tr>
+                    <td colspan="5" class="py-8 text-center text-slate-400 text-xs">No feed records for ${escapeHtml(selectedHouse?.name || 'House')} in selected dates</td>
+                  </tr>
+                ` : ledgerRows.map(r => {
+                  const ft = appState.feedTypes.find(f => f.id === r.feedTypeId);
+                  return `
+                    <tr class="hover:bg-slate-50/80">
+                      <td class="py-2.5 px-3 font-mono text-[11px] font-semibold text-slate-700 whitespace-nowrap">${r.date.slice(5)}</td>
+                      <td class="py-2.5 px-2 font-semibold text-slate-800">${escapeHtml(ft ? ft.code : 'Feed')}</td>
+                      <td class="py-2.5 px-2 text-right font-mono font-bold text-forest-700">${r.bagInput > 0 ? '+' + r.bagInput : '-'}</td>
+                      <td class="py-2.5 px-2 text-right font-mono font-bold text-amber-600">${r.bagOutput > 0 ? '-' + r.bagOutput : '-'}</td>
+                      <td class="py-2.5 px-3 text-right font-mono font-extrabold text-slate-900">${r.runningTotal}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderDeliveryInputReport() {
+      const fromD = reportFilters.deliveryFromDate;
+      const toD = reportFilters.deliveryToDate;
+      const getRecordGroupId = (r) => r.groupId || appState.houses.find(h => h.id === r.houseId)?.groupId;
+
+      const deliveries = appState.records
+        .filter(r => r.entryType === 'input')
+        .filter(r => {
+          const dOnly = r.datetime.split('T')[0];
+          const matchDate = dOnly >= fromD && dOnly <= toD;
+          const matchFeed = reportFilters.deliveryFeedId === 'ALL' || r.feedTypeId === reportFilters.deliveryFeedId;
+          const matchGroup = reportFilters.groupId === 'ALL' || getRecordGroupId(r) === reportFilters.groupId;
+          return matchDate && matchFeed && matchGroup;
+        })
+        .sort((a, b) => b.datetime.localeCompare(a.datetime));
+
+      const totalDeliveredBags = deliveries.reduce((s, r) => s + Number(r.bags || 0), 0);
+
+      return `
+        <!-- Delivery Filter Card -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-extrabold text-slate-900">Feeds Bag Delivery Input Report</h3>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">DO &amp; Lorry Log</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">From Date</label>
+              <input type="date" value="${fromD}" onchange="reportFilters.deliveryFromDate = this.value; renderApp()"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-mono font-semibold text-slate-800" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">To Date</label>
+              <input type="date" value="${toD}" onchange="reportFilters.deliveryToDate = this.value; renderApp()"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-mono font-semibold text-slate-800" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Farm Group</label>
+              <select onchange="reportFilters.groupId = this.value; renderApp()"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800">
+                <option value="ALL" ${reportFilters.groupId === 'ALL' ? 'selected' : ''}>All Groups</option>
+                ${appState.groups.map(g => `<option value="${g.id}" ${g.id === reportFilters.groupId ? 'selected' : ''}>${escapeHtml(g.name)}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Filter Feed Type</label>
+              <select onchange="reportFilters.deliveryFeedId = this.value; renderApp()"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-bold text-slate-800">
+                <option value="ALL">All Feed Bag Types</option>
+                ${appState.feedTypes.map(ft => `<option value="${ft.id}" ${ft.id === reportFilters.deliveryFeedId ? 'selected' : ''}>${escapeHtml(ft.code)} - ${escapeHtml(ft.name)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <button onclick="exportDeliveryReportCsv()"
+            class="tactile-btn w-full py-2.5 px-3 rounded-xl bg-forest-800 hover:bg-forest-900 text-white text-xs font-bold flex items-center justify-center gap-1.5">
+            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i> Export Delivery Report &amp; Push to Dropbox
+          </button>
+        </div>
+
+        <!-- Total Delivered Banner -->
+        <div class="bg-forest-900 text-white px-4 py-3 rounded-2xl flex items-center justify-between">
+          <div>
+            <p class="text-[10px] uppercase tracking-wider text-forest-200 font-bold">Total Deliveries (${deliveries.length} loads)</p>
+            <p class="text-xs text-forest-100 mt-0.5">${formatShortDate(fromD)} &ndash; ${formatShortDate(toD)}</p>
+          </div>
+          <div class="text-right">
+            <span class="font-mono text-lg font-extrabold text-amber-400">${totalDeliveredBags.toLocaleString()}</span>
+            <span class="block text-[10px] text-forest-200">Total Bags In</span>
+          </div>
+        </div>
+
+        <!-- Delivery Cards List -->
+        <div class="space-y-2.5">
+          ${deliveries.length === 0 ? `
+            <div class="bg-white rounded-3xl p-8 text-center border border-slate-200 text-slate-400 text-xs">
+              No feed delivery records found for the selected period.
+            </div>
+          ` : deliveries.map(d => {
+            const grp = appState.groups.find(g => g.id === getRecordGroupId(d));
+            const house = appState.houses.find(h => h.id === d.houseId);
+            const ft = appState.feedTypes.find(f => f.id === d.feedTypeId);
+            const worker = appState.workers.find(w => w.id === d.workerId);
+            return `
+              <div class="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                      <span class="px-2 py-0.5 rounded-md bg-forest-100 text-forest-900 font-mono text-[10px] font-extrabold">
+                        ${escapeHtml(d.doNumber || 'NO-DO')}
+                      </span>
+                      <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-[10px] font-bold">
+                        Lorry: ${escapeHtml(d.lorryNumber || 'N/A')}
+                      </span>
+                      <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">
+                        ${escapeHtml(grp?.name || 'Group')}
+                      </span>
+                    </div>
+                    <p class="text-xs font-extrabold text-slate-900 mt-1.5">${escapeHtml(ft ? ft.code + ' • ' + ft.name : 'Feed Bag')}</p>
+                    <p class="text-[11px] text-slate-500">${escapeHtml(house?.name || 'Store')} • Received by ${escapeHtml(worker?.name || 'Shift')}</p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <span class="font-mono text-base font-extrabold text-forest-700">+${d.bags}</span>
+                    <span class="block text-[10px] text-slate-400 font-semibold">${d.siloTon ? `Silo ${d.siloTon}T` : 'Bags'}</span>
+                  </div>
+                </div>
+                <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+                  <span>Date: ${formatDisplayDateTime(d.datetime)}</span>
+                  <span class="${d.synced ? 'text-emerald-600' : 'text-amber-600'} font-sans font-bold">${d.synced ? 'Synced' : 'Pending Sync'}</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function exportHouseLedgerCsv() {
+      const selectedHouse = appState.houses.find(h => h.id === reportFilters.houseId) || appState.houses[0];
+      const fromD = reportFilters.fromDate;
+      const toD = reportFilters.toDate;
+      const houseRecords = appState.records
+        .filter(r => r.houseId === selectedHouse.id)
+        .sort((a, b) => a.datetime.localeCompare(b.datetime));
+
+      let runningTotal = 0;
+      houseRecords.forEach(r => {
+        const dOnly = r.datetime.split('T')[0];
+        if (dOnly < fromD) runningTotal += (r.entryType === 'input' ? Number(r.bags) : -Number(r.bags));
+      });
+
+      const groupedMap = new Map();
+      houseRecords.filter(r => {
+        const dOnly = r.datetime.split('T')[0];
+        return dOnly >= fromD && dOnly <= toD;
+      }).forEach(r => {
+        const dateOnly = r.datetime.split('T')[0];
+        const key = `${dateOnly}__${r.feedTypeId}`;
+        if (!groupedMap.has(key)) groupedMap.set(key, { date: dateOnly, feedTypeId: r.feedTypeId, bagInput: 0, bagOutput: 0 });
+        const row = groupedMap.get(key);
+        if (r.entryType === 'input') row.bagInput += Number(r.bags || 0);
+        else row.bagOutput += Number(r.bags || 0);
+      });
+
+      const lines = ['House,Date,Feed Bag Type,Daily Total Bag Input,Daily Total Bag Output to Hopper,Running Total'];
+      Array.from(groupedMap.values()).sort((a, b) => a.date.localeCompare(b.date)).forEach(row => {
+        runningTotal = runningTotal + row.bagInput - row.bagOutput;
+        const ft = appState.feedTypes.find(f => f.id === row.feedTypeId);
+        lines.push(`"${selectedHouse.name}","${row.date}","${ft ? ft.code + ' ' + ft.name : 'Feed'}",${row.bagInput},${row.bagOutput},${runningTotal}`);
+      });
+
+      const csv = lines.join('\n');
+      const filename = `MIV_${selectedHouse.name.replace(/\s+/g, '_')}_Ledger_${fromD}_to_${toD}.csv`;
+      downloadCsvLocally(filename, csv);
+      uploadCsvReportToDropbox(filename, csv);
+    }
+
+    function exportDeliveryReportCsv() {
+      const fromD = reportFilters.deliveryFromDate;
+      const toD = reportFilters.deliveryToDate;
+      const getRecordGroupId = (r) => r.groupId || appState.houses.find(h => h.id === r.houseId)?.groupId;
+      const deliveries = appState.records
+        .filter(r => r.entryType === 'input')
+        .filter(r => {
+          const dOnly = r.datetime.split('T')[0];
+          const matchDate = dOnly >= fromD && dOnly <= toD;
+          const matchFeed = reportFilters.deliveryFeedId === 'ALL' || r.feedTypeId === reportFilters.deliveryFeedId;
+          const matchGroup = reportFilters.groupId === 'ALL' || getRecordGroupId(r) === reportFilters.groupId;
+          return matchDate && matchFeed && matchGroup;
+        });
+
+      const lines = ['Date & Time,Group,Delivery Order (DO),Lorry Number,House,Feed Bag Type,Bags Delivered,Silo Tons,Received By'];
+      deliveries.forEach(d => {
+        const grp = appState.groups.find(g => g.id === getRecordGroupId(d));
+        const house = appState.houses.find(h => h.id === d.houseId);
+        const ft = appState.feedTypes.find(f => f.id === d.feedTypeId);
+        const worker = appState.workers.find(w => w.id === d.workerId);
+        lines.push(`"${d.datetime}","${grp?.name || ''}","${d.doNumber || ''}","${d.lorryNumber || ''}","${house?.name || ''}","${ft ? ft.code + ' ' + ft.name : ''}",${d.bags},${d.siloTon || ''},"${worker?.name || ''}"`);
+      });
+
+      const csv = lines.join('\n');
+      const filename = `MIV_Feed_Delivery_Report_${fromD}_to_${toD}.csv`;
+      downloadCsvLocally(filename, csv);
+      uploadCsvReportToDropbox(filename, csv);
+    }
+
+    function downloadCsvLocally(filename, csvContent) {
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW D: ADMIN FARM CONFIGURATION (GROUPS, HOUSES, WORKERS, FEEDS, CYCLE)
+    // -------------------------------------------------------------------------
+    function renderAdminSettingsView() {
+      return `
+        <!-- Sub-Navigation Pills -->
+        <div class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+          ${[
+            { id: 'groups', label: 'Groups (4)', icon: 'layers' },
+            { id: 'houses', label: 'Houses', icon: 'home' },
+            { id: 'workers', label: 'Workers', icon: 'users' },
+            { id: 'feeds', label: 'Feed Bags', icon: 'package' },
+            { id: 'cycle', label: 'Cycle & PIN', icon: 'calendar' }
+          ].map(t => `
+            <button onclick="adminSubTab = '${t.id}'; renderApp()"
+              class="tactile-btn shrink-0 px-3 py-2 rounded-2xl text-xs font-extrabold flex items-center gap-1.5 border transition ${adminSubTab === t.id
+                ? 'bg-forest-800 text-white border-forest-800 shadow-xs'
+                : 'bg-white text-slate-600 border-slate-200'}">
+              <i data-lucide="${t.icon}" class="w-3.5 h-3.5"></i>
+              <span>${t.label}</span>
+            </button>
+          `).join('')}
+        </div>
+
+        ${adminSubTab === 'groups' ? renderAdminGroupsSection() : ''}
+        ${adminSubTab === 'houses' ? renderAdminHousesSection() : ''}
+        ${adminSubTab === 'workers' ? renderAdminWorkersSection() : ''}
+        ${adminSubTab === 'feeds' ? renderAdminFeedsSection() : ''}
+        ${adminSubTab === 'cycle' ? renderAdminCycleSection() : ''}
+      `;
+    }
+
+    function renderAdminGroupsSection() {
+      return `
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-extrabold text-slate-900">Add New Farm Group</h3>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-forest-50 text-forest-700 border border-forest-200">1 Admin • Multi-Group</span>
+          </div>
+          <form onsubmit="handleAddGroup(event)" class="grid grid-cols-3 gap-2">
+            <input id="new-group-code" type="text" placeholder="Code (GRP-E)" required
+              class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-mono font-bold uppercase outline-none focus:border-forest-600" />
+            <input id="new-group-name" type="text" placeholder="Group Name (Group E)" required
+              class="col-span-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-forest-600" />
+            <button type="submit" class="col-span-3 tactile-btn py-2.5 rounded-xl bg-forest-800 text-white text-xs font-bold">
+              + Add Farm Group
+            </button>
+          </form>
+        </div>
+
+        <div class="space-y-2.5">
+          ${appState.groups.map(g => {
+            const assignedHouses = appState.houses.filter(h => h.groupId === g.id);
+            const info = getCycleDayInfo(g);
+            return `
+              <div class="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-2 flex-1">
+                    <input type="text" value="${escapeHtml(g.code || '')}" onchange="updateGroupCode('${g.id}', this.value)"
+                      class="w-20 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-amber-900 uppercase text-center" />
+                    <input type="text" value="${escapeHtml(g.name)}" onchange="updateGroupName('${g.id}', this.value)"
+                      class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-extrabold text-slate-900" />
+                  </div>
+                  <button onclick="deleteGroup('${g.id}')" class="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Group Batch / Cycle</label>
+                    <input type="text" value="${escapeHtml(g.cycleName || '')}" onchange="updateGroupCycleName('${g.id}', this.value)"
+                      class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-semibold text-slate-700" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-0.5">Cycle Start (Day ${info.currentDay}/60)</label>
+                    <input type="date" value="${g.startDate || appState.cycle.startDate}" onchange="updateGroupStartDate('${g.id}', this.value)"
+                      class="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-mono text-slate-700" />
+                  </div>
+                </div>
+
+                <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                  <span>Assigned Houses: <strong class="text-slate-800">${assignedHouses.length > 0 ? assignedHouses.map(h => h.name).join(', ') : 'None yet'}</strong></span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderAdminHousesSection() {
+      return `
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+          <h3 class="text-xs font-extrabold text-slate-900">Add / Assign House to Group</h3>
+          <form onsubmit="handleAddHouse(event)" class="grid grid-cols-2 gap-2">
+            <input id="new-house-name" type="text" placeholder="House Name (e.g. House 7)" required
+              class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-forest-600" />
+            <select id="new-house-group"
+              class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:border-forest-600">
+              ${appState.groups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('')}
+            </select>
+            <button type="submit" class="col-span-2 tactile-btn py-2.5 rounded-xl bg-forest-800 text-white text-xs font-bold">
+              + Add House Number
+            </button>
+          </form>
+        </div>
+
+        <div class="space-y-2">
+          ${appState.houses.map(h => `
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex-1 grid grid-cols-2 gap-2">
+                  <input type="text" value="${escapeHtml(h.name)}" onchange="updateHouseName('${h.id}', this.value)"
+                    class="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-extrabold text-slate-900" />
+                  <select onchange="updateHouseGroup('${h.id}', this.value)"
+                    class="bg-forest-50 border border-forest-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-forest-900">
+                    ${appState.groups.map(g => `<option value="${g.id}" ${g.id === h.groupId ? 'selected' : ''}>${escapeHtml(g.name)}</option>`).join('')}
+                  </select>
+                </div>
+                <button onclick="deleteHouse('${h.id}')" class="p-2 text-rose-500 hover:bg-rose-50 rounded-xl">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderAdminWorkersSection() {
+      const shiftTemplates = ['Morning Shift', 'Night Shift', 'Supervisor'];
+      return `
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-extrabold text-slate-900">House Shift &amp; Supervisor Roles</h3>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-forest-50 text-forest-700 border border-forest-200">3 Standard Roles</span>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-relaxed">
+            Every house has only 3 standardized selection options: <strong class="text-slate-700">Morning Shift</strong>, <strong class="text-slate-700">Night Shift</strong>, and <strong class="text-slate-700">Supervisor</strong>.
+          </p>
+        </div>
+
+        <div class="space-y-2.5">
+          ${appState.houses.map(h => {
+            const grp = appState.groups.find(g => g.id === h.groupId);
+            return `
+              <div class="bg-white p-3.5 rounded-2xl border border-slate-200 space-y-2.5">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-extrabold text-slate-900">${escapeHtml(h.name)}</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-forest-50 text-forest-800 border border-forest-200">${escapeHtml(grp?.name || 'Group')}</span>
+                  </div>
+                  <span class="text-[10px] font-mono text-slate-400">3 Selections</span>
+                </div>
+                <div class="grid grid-cols-3 gap-1.5">
+                  ${shiftTemplates.map(roleName => `
+                    <div class="px-2 py-2 rounded-xl bg-slate-50 border border-slate-200/80 text-center">
+                      <span class="text-[11px] font-bold text-slate-800 block truncate">${roleName}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderAdminFeedsSection() {
+      return `
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+          <h3 class="text-xs font-extrabold text-slate-900">Add / Update Feed Bag Types</h3>
+          <form onsubmit="handleAddFeedType(event)" class="grid grid-cols-3 gap-2">
+            <input id="new-feed-code" type="text" placeholder="Code (204F)" required
+              class="bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-xs font-mono font-bold uppercase outline-none focus:border-forest-600" />
+            <input id="new-feed-name" type="text" placeholder="Feed Bag Name" required
+              class="col-span-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold outline-none focus:border-forest-600" />
+            <button type="submit" class="col-span-3 tactile-btn py-2.5 rounded-xl bg-forest-800 text-white text-xs font-bold">
+              + Add Feed Bag Type
+            </button>
+          </form>
+        </div>
+
+        <div class="space-y-2">
+          ${appState.feedTypes.map(ft => `
+            <div class="bg-white p-3 rounded-2xl border border-slate-200 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 flex-1">
+                <input type="text" value="${escapeHtml(ft.code)}" onchange="updateFeedTypeCode('${ft.id}', this.value)"
+                  class="w-20 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 text-xs font-mono font-extrabold text-amber-900 uppercase text-center" />
+                <input type="text" value="${escapeHtml(ft.name)}" onchange="updateFeedTypeName('${ft.id}', this.value)"
+                  class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-800" />
+              </div>
+              <button onclick="deleteFeedType('${ft.id}')" class="p-2 text-rose-500 hover:bg-rose-50 rounded-xl">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderAdminCycleSection() {
+      const info = getCycleDayInfo();
+      return `
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-3.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-extrabold text-slate-900">60-Day Farm Cycle Configuration</h3>
+            <span class="px-2.5 py-0.5 rounded-full bg-forest-100 text-forest-800 text-[10px] font-bold">Day ${info.currentDay} of ${info.durationDays}</span>
+          </div>
+
+          <form onsubmit="handleUpdateCycle(event)" class="space-y-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Cycle Batch Name</label>
+              <input id="cycle-name-input" type="text" value="${escapeHtml(appState.cycle.name)}" required
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900" />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Cycle Start Date</label>
+                <input id="cycle-start-input" type="date" value="${appState.cycle.startDate}" required
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono font-semibold text-slate-900" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Cycle Length (Days)</label>
+                <input id="cycle-days-input" type="number" min="30" max="120" value="${appState.cycle.durationDays}" required
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono font-bold text-slate-900" />
+              </div>
+            </div>
+            <button type="submit" class="tactile-btn w-full py-3 rounded-xl bg-forest-800 hover:bg-forest-900 text-white text-xs font-extrabold">
+              Update Cycle Schedule &amp; Sync
+            </button>
+          </form>
+        </div>
+
+        <!-- Access Passwords Configuration -->
+        <div class="bg-white p-4 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-extrabold text-slate-900">App Access Passwords</h3>
+            <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold">Default: 1234</span>
+          </div>
+          <form onsubmit="handleUpdatePasswords(event)" class="space-y-3">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">Farm Manager (Admin) PIN</label>
+                <input id="admin-pin-input" type="text" maxlength="12" value="${escapeHtml(appState.security?.adminPin || '1234')}" required
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-extrabold text-slate-900 text-center" />
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">My Logs Amend/Delete PIN</label>
+                <input id="logs-pin-input" type="text" maxlength="12" value="${escapeHtml(appState.security?.logsPin || '1234')}" required
+                  class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono font-extrabold text-slate-900 text-center" />
+              </div>
+            </div>
+            <button type="submit" class="tactile-btn w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold">
+              Save Access Passwords
+            </button>
+          </form>
+        </div>
+      `;
+    }
+
+    // Admin Mutation Handlers
+    function handleAddGroup(e) {
+      e.preventDefault();
+      const code = document.getElementById('new-group-code').value.trim().toUpperCase();
+      const name = document.getElementById('new-group-name').value.trim();
+      if (!name) return;
+      appState.groups.push({
+        id: 'g-' + Date.now(),
+        code: code || 'GRP',
+        name,
+        cycleName: appState.cycle.name,
+        startDate: appState.cycle.startDate,
+        durationDays: appState.cycle.durationDays
+      });
+      saveAndSyncAdmin('Added ' + name);
+    }
+    function updateGroupName(id, val) {
+      const g = appState.groups.find(x => x.id === id);
+      if (g && val.trim()) { g.name = val.trim(); saveAndSyncAdmin('Updated group name'); }
+    }
+    function updateGroupCode(id, val) {
+      const g = appState.groups.find(x => x.id === id);
+      if (g && val.trim()) { g.code = val.trim().toUpperCase(); saveAndSyncAdmin('Updated group code'); }
+    }
+    function updateGroupCycleName(id, val) {
+      const g = appState.groups.find(x => x.id === id);
+      if (g && val.trim()) { g.cycleName = val.trim(); saveAndSyncAdmin('Updated group cycle name'); }
+    }
+    function updateGroupStartDate(id, val) {
+      const g = appState.groups.find(x => x.id === id);
+      if (g && val) { g.startDate = val; saveAndSyncAdmin('Updated group cycle start date'); }
+    }
+    function deleteGroup(id) {
+      if (appState.groups.length <= 1) { showSnackbar('At least one farm group must remain', 'alert-circle'); return; }
+      const fallbackGroupId = appState.groups.find(x => x.id !== id)?.id;
+      appState.groups = appState.groups.filter(x => x.id !== id);
+      appState.houses.forEach(h => {
+        if (h.groupId === id) h.groupId = fallbackGroupId;
+      });
+      saveAndSyncAdmin('Removed farm group');
+    }
+
+    function handleAddHouse(e) {
+      e.preventDefault();
+      const name = document.getElementById('new-house-name').value.trim();
+      const groupId = document.getElementById('new-house-group').value || appState.groups[0]?.id;
+      if (!name) return;
+      const newHouseId = 'h-' + Date.now();
+      appState.houses.push({ id: newHouseId, groupId, name, capacity: '' });
+      ['Morning Shift', 'Night Shift', 'Supervisor'].forEach((roleName, idx) => {
+        appState.workers.push({ id: `w-${newHouseId}-${idx + 1}`, name: roleName, houseId: newHouseId });
+      });
+      saveAndSyncAdmin('Added ' + name + ' with 3 shift roles');
+    }
+    function updateHouseGroup(id, groupId) {
+      const h = appState.houses.find(x => x.id === id);
+      if (h) { h.groupId = groupId; saveAndSyncAdmin('Assigned house to group'); }
+    }
+    function updateHouseName(id, val) {
+      const h = appState.houses.find(x => x.id === id);
+      if (h && val.trim()) { h.name = val.trim(); saveAndSyncAdmin('Updated house name'); }
+    }
+    function deleteHouse(id) {
+      if (appState.houses.length <= 1) { showSnackbar('At least one house is required', 'alert-circle'); return; }
+      appState.houses = appState.houses.filter(x => x.id !== id);
+      appState.workers = appState.workers.filter(w => w.houseId !== id);
+      saveAndSyncAdmin('Removed house');
+    }
+
+    function handleAddFeedType(e) {
+      e.preventDefault();
+      const code = document.getElementById('new-feed-code').value.trim().toUpperCase();
+      const name = document.getElementById('new-feed-name').value.trim();
+      if (!code || !name) return;
+      appState.feedTypes.push({ id: 'f-' + Date.now(), code, name, weightKg: 50 });
+      saveAndSyncAdmin('Added feed type ' + code);
+    }
+    function updateFeedTypeCode(id, val) {
+      const f = appState.feedTypes.find(x => x.id === id);
+      if (f && val.trim()) { f.code = val.trim().toUpperCase(); saveAndSyncAdmin('Updated feed code'); }
+    }
+    function updateFeedTypeName(id, val) {
+      const f = appState.feedTypes.find(x => x.id === id);
+      if (f && val.trim()) { f.name = val.trim(); saveAndSyncAdmin('Updated feed name'); }
+    }
+    function deleteFeedType(id) {
+      if (appState.feedTypes.length <= 1) { showSnackbar('At least one feed type is required', 'alert-circle'); return; }
+      appState.feedTypes = appState.feedTypes.filter(x => x.id !== id);
+      saveAndSyncAdmin('Removed feed type');
+    }
+
+    function handleUpdateCycle(e) {
+      e.preventDefault();
+      appState.cycle.name = document.getElementById('cycle-name-input').value.trim();
+      appState.cycle.startDate = document.getElementById('cycle-start-input').value;
+      appState.cycle.durationDays = parseInt(document.getElementById('cycle-days-input').value) || 60;
+      appState.groups.forEach(g => {
+        g.cycleName = appState.cycle.name;
+        g.startDate = appState.cycle.startDate;
+        g.durationDays = appState.cycle.durationDays;
+      });
+      saveAndSyncAdmin('Updated 60-day cycle schedule for all groups');
+    }
+
+    function handleUpdatePasswords(e) {
+      e.preventDefault();
+      const newAdminPin = (document.getElementById('admin-pin-input').value || '').trim();
+      const newLogsPin = (document.getElementById('logs-pin-input').value || '').trim();
+      if (!newAdminPin || !newLogsPin) {
+        showSnackbar('Passwords cannot be empty', 'alert-circle');
+        return;
+      }
+      appState.security = { adminPin: newAdminPin, logsPin: newLogsPin };
+      saveAndSyncAdmin('Updated Admin & My Logs passwords');
+    }
+
+    function saveAndSyncAdmin(msg) {
+      saveState();
+      renderApp();
+      if (appState.dropbox.autoSync && hasDropboxCredentials()) {
+        syncToDropbox(true);
+      }
+      showSnackbar(msg, 'check-circle-2');
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW E: RECENT USER SUBMISSION LOGS (WITH AMEND & DELETE)
+    // -------------------------------------------------------------------------
+    function renderHistoryView() {
+      const recent = [...appState.records]
+        .sort((a, b) => b.datetime.localeCompare(a.datetime))
+        .slice(0, 30);
+
+      return `
+        <div class="flex items-center justify-between px-1">
+          <div>
+            <h2 class="text-sm font-extrabold text-slate-900">Recent Daily Feed Logs</h2>
+            <p class="text-[11px] text-slate-500">Amend wrong entries or delete mistakes</p>
+          </div>
+          <span class="text-[11px] font-semibold text-forest-700">${appState.records.length} Total</span>
+        </div>
+
+        <div class="space-y-2.5">
+          ${recent.length === 0 ? `
+            <div class="bg-white p-8 rounded-3xl border border-slate-200 text-center text-slate-400 text-xs">
+              No feed entries logged yet.
+            </div>
+          ` : recent.map(r => {
+            const house = appState.houses.find(h => h.id === r.houseId);
+            const group = appState.groups.find(g => g.id === (r.groupId || house?.groupId));
+            const worker = appState.workers.find(w => w.id === r.workerId);
+            const ft = appState.feedTypes.find(f => f.id === r.feedTypeId);
+            const isOut = r.entryType === 'output';
+            const isConfirmingDelete = pendingDeleteRecordId === r.id;
+            return `
+              <div class="bg-white p-3.5 rounded-2xl border ${isConfirmingDelete ? 'border-rose-300 bg-rose-50/30' : 'border-slate-200/90'} shadow-2xs space-y-2.5">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-2xl ${isOut ? 'bg-amber-100 text-amber-700' : 'bg-forest-100 text-forest-700'} flex items-center justify-center shrink-0">
+                      <i data-lucide="${isOut ? 'flame' : 'package-plus'}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-forest-800 text-white">${escapeHtml(group?.name || 'Group')}</span>
+                        ${isOut ? `<span class="text-xs font-extrabold text-slate-900">${escapeHtml(house?.name || 'House')}</span>` : ''}
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${isOut ? 'bg-amber-50 text-amber-800' : 'bg-forest-50 text-forest-800'}">
+                          ${isOut ? 'Hopper Input' : 'Delivery'}
+                        </span>
+                      </div>
+                      <p class="text-xs font-mono font-extrabold text-slate-800 truncate mt-0.5">${escapeHtml(ft?.code || 'Feed')}</p>
+                      <p class="text-[10px] text-slate-400 mt-0.5">
+                        ${escapeHtml(worker?.name || 'Shift')} • ${formatDisplayDateTime(r.datetime)}
+                      </p>
+                      ${r.doNumber ? `<p class="text-[10px] font-mono text-slate-500 mt-0.5">DO: ${escapeHtml(r.doNumber)} • Lorry: ${escapeHtml(r.lorryNumber || '-')}</p>` : ''}
+                    </div>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <div class="font-mono text-sm font-extrabold ${isOut ? 'text-amber-700' : 'text-forest-700'}">
+                      ${isOut ? '-' : '+'}${r.bags}
+                    </div>
+                    <div class="text-[9px] uppercase font-bold text-slate-400">${r.siloTon ? `Silo ${r.siloTon}T` : 'Bags'}</div>
+                  </div>
+                </div>
+
+                <!-- Amend / Delete Action Bar -->
+                ${isConfirmingDelete ? `
+                  <div class="pt-2 border-t border-rose-200 flex items-center justify-between gap-2">
+                    <span class="text-[11px] font-bold text-rose-700">Delete this entry?</span>
+                    <div class="flex items-center gap-1.5">
+                      <button type="button" onclick="cancelDeleteRecord()"
+                        class="tactile-btn px-3 py-1.5 rounded-xl bg-slate-200 text-slate-700 text-[11px] font-bold">
+                        Cancel
+                      </button>
+                      <button type="button" onclick="confirmDeleteRecord('${r.id}')"
+                        class="tactile-btn px-3 py-1.5 rounded-xl bg-rose-600 text-white text-[11px] font-extrabold">
+                        Confirm Delete
+                      </button>
+                    </div>
+                  </div>
+                ` : `
+                  <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <span class="text-[10px] font-semibold ${r.synced ? 'text-emerald-600' : 'text-amber-600'}">
+                      ${r.synced ? 'Synced to Dropbox' : 'Saved Locally'}
+                    </span>
+                    <div class="flex items-center gap-1.5">
+                      <button type="button" onclick="openEditRecordModal('${r.id}')"
+                        class="tactile-btn px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-bold flex items-center gap-1">
+                        <i data-lucide="edit-3" class="w-3 h-3"></i> Amend
+                      </button>
+                      <button type="button" onclick="promptDeleteRecord('${r.id}')"
+                        class="tactile-btn px-2.5 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold flex items-center gap-1">
+                        <i data-lucide="trash-2" class="w-3 h-3"></i> Delete
+                      </button>
+                    </div>
+                  </div>
+                `}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    // -------------------------------------------------------------------------
+    // AMEND & DELETE HANDLERS FOR RECENT DAILY FEED LOGS (PASSWORD PROTECTED)
+    // -------------------------------------------------------------------------
+    function openEditRecordModal(recordId) {
+      const rec = appState.records.find(r => r.id === recordId);
+      if (!rec) return;
+
+      requestPasswordAccess(
+        'Amend Log Verification',
+        'Enter password to edit this daily feed entry',
+        appState.security?.logsPin || '1234',
+        () => {
+          document.getElementById('edit-rec-id').value = rec.id;
+          document.getElementById('edit-rec-type').value = rec.entryType;
+
+          // Populate Groups
+          const groupSel = document.getElementById('edit-rec-group');
+          const recHouse = appState.houses.find(h => h.id === rec.houseId);
+          const activeGroupId = rec.groupId || recHouse?.groupId || appState.groups[0]?.id;
+          groupSel.innerHTML = appState.groups.map(g =>
+            `<option value="${g.id}">${escapeHtml(g.name)}</option>`
+          ).join('');
+          groupSel.value = activeGroupId;
+
+          // Populate Houses filtered by Group
+          populateEditHousesForGroup(rec.houseId);
+
+          // Populate Workers (Morning Shift, Night Shift, Supervisor)
+          populateEditWorkersForHouse(rec.workerId);
+
+          // Populate Feed Types
+          const feedSel = document.getElementById('edit-rec-feed');
+          feedSel.innerHTML = appState.feedTypes.map(ft =>
+            `<option value="${ft.id}">${escapeHtml(ft.code)} - ${escapeHtml(ft.name)}</option>`
+          ).join('');
+          feedSel.value = rec.feedTypeId;
+
+          document.getElementById('edit-rec-bags').value = rec.bags;
+          document.getElementById('edit-rec-datetime').value = rec.datetime.slice(0, 16);
+          document.getElementById('edit-rec-silo-tons').value = rec.entryType === 'input' ? (rec.siloTon || '') : '';
+          document.getElementById('edit-rec-hopper-silo').value = rec.entryType === 'output' ? (rec.siloTon || '') : '';
+          document.getElementById('edit-rec-do').value = rec.doNumber || '';
+          document.getElementById('edit-rec-lorry').value = rec.lorryNumber || '';
+
+          toggleEditDeliveryFields();
+          document.getElementById('edit-record-modal').classList.remove('hidden');
+          lucide.createIcons();
+        }
+      );
+    }
+
+    function syncEditSiloToBags() {
+      const tonVal = parseFloat(document.getElementById('edit-rec-silo-tons').value);
+      if (!isNaN(tonVal) && tonVal > 0) {
+        const capped = Math.min(30, tonVal);
+        if (tonVal > 30) document.getElementById('edit-rec-silo-tons').value = 30;
+        document.getElementById('edit-rec-bags').value = Math.round(capped * 20);
+      }
+    }
+
+    function populateEditHousesForGroup(preferredHouseId = null) {
+      const groupId = document.getElementById('edit-rec-group').value;
+      const groupHouses = appState.houses.filter(h => h.groupId === groupId);
+      const list = groupHouses.length > 0 ? groupHouses : appState.houses;
+      const houseSel = document.getElementById('edit-rec-house');
+      houseSel.innerHTML = list.map(h =>
+        `<option value="${h.id}">${escapeHtml(h.name)}</option>`
+      ).join('');
+      if (preferredHouseId && list.some(h => h.id === preferredHouseId)) {
+        houseSel.value = preferredHouseId;
+      }
+      populateEditWorkersForHouse();
+    }
+
+    function populateEditWorkersForHouse(preferredWorkerId = null) {
+      const houseId = document.getElementById('edit-rec-house').value;
+      const assigned = appState.workers.filter(w => w.houseId === houseId);
+      const list = assigned.length > 0 ? assigned : appState.workers;
+      const workerSel = document.getElementById('edit-rec-worker');
+      workerSel.innerHTML = list.map(w =>
+        `<option value="${w.id}">${escapeHtml(w.name)}</option>`
+      ).join('');
+      if (preferredWorkerId && list.some(w => w.id === preferredWorkerId)) {
+        workerSel.value = preferredWorkerId;
+      }
+    }
+
+    function toggleEditDeliveryFields() {
+      const type = document.getElementById('edit-rec-type').value;
+      const box = document.getElementById('edit-rec-delivery-box');
+      const hopperBox = document.getElementById('edit-rec-hopper-silo-box');
+      if (type === 'input') {
+        box.classList.remove('hidden');
+        if (hopperBox) hopperBox.classList.add('hidden');
+      } else {
+        box.classList.add('hidden');
+        if (hopperBox) hopperBox.classList.remove('hidden');
+      }
+    }
+
+    function closeEditRecordModal() {
+      document.getElementById('edit-record-modal').classList.add('hidden');
+    }
+
+    async function handleSaveAmendedRecord(e) {
+      e.preventDefault();
+      const recId = document.getElementById('edit-rec-id').value;
+      const rec = appState.records.find(r => r.id === recId);
+      if (!rec) return;
+
+      const updatedBags = parseInt(document.getElementById('edit-rec-bags').value) || 0;
+      const rawDeliverySilo = parseFloat(document.getElementById('edit-rec-silo-tons').value);
+      const rawHopperSilo = parseFloat(document.getElementById('edit-rec-hopper-silo').value);
+
+      rec.entryType = document.getElementById('edit-rec-type').value;
+      rec.groupId = document.getElementById('edit-rec-group').value;
+      rec.houseId = document.getElementById('edit-rec-house').value;
+      rec.workerId = document.getElementById('edit-rec-worker').value;
+      rec.feedTypeId = document.getElementById('edit-rec-feed').value;
+      rec.bags = updatedBags;
+      if (rec.entryType === 'input') {
+        rec.siloTon = (!isNaN(rawDeliverySilo) && rawDeliverySilo > 0) ? Math.min(30, rawDeliverySilo) : null;
+      } else {
+        rec.siloTon = (!isNaN(rawHopperSilo) && rawHopperSilo > 0) ? Math.min(30, rawHopperSilo) : null;
+      }
+      if (!rec.bags && !rec.siloTon) {
+        showSnackbar('Please enter a valid bag count or silo input', 'alert-circle');
+        return;
+      }
+      rec.datetime = document.getElementById('edit-rec-datetime').value;
+      rec.doNumber = rec.entryType === 'input' ? document.getElementById('edit-rec-do').value.trim() : '';
+      rec.lorryNumber = rec.entryType === 'input' ? document.getElementById('edit-rec-lorry').value.trim().toUpperCase() : '';
+      rec.synced = false;
+
+      saveState();
+      closeEditRecordModal();
+      renderApp();
+
+      const grp = appState.groups.find(g => g.id === rec.groupId);
+      const house = appState.houses.find(h => h.id === rec.houseId);
+      triggerHeadsUpNotification(
+        `[${grp?.name || 'Group'}] Amended: ${house?.name || 'House'} • ${rec.bags} Bags`,
+        `Updated ${rec.entryType === 'output' ? 'Hopper Input' : 'Delivery'} record`
+      );
+
+      if (appState.dropbox.autoSync && hasDropboxCredentials()) {
+        await syncToDropbox(false);
+      } else {
+        showSnackbar('Feed log amended & saved!', 'check-circle-2');
+      }
+    }
+
+    function promptDeleteRecord(recordId) {
+      requestPasswordAccess(
+        'Delete Log Verification',
+        'Enter password to delete this daily feed entry',
+        appState.security?.logsPin || '1234',
+        () => {
+          pendingDeleteRecordId = recordId;
+          renderApp();
+        }
+      );
+    }
+
+    function cancelDeleteRecord() {
+      pendingDeleteRecordId = null;
+      renderApp();
+    }
+
+    async function confirmDeleteRecord(recordId) {
+      appState.records = appState.records.filter(r => r.id !== recordId);
+      pendingDeleteRecordId = null;
+      saveState();
+      renderApp();
+
+      if (appState.dropbox.autoSync && hasDropboxCredentials()) {
+        await syncToDropbox(false);
+      } else {
+        showSnackbar('Entry deleted from logs', 'trash-2');
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // BOTTOM NAVIGATION BAR RENDERER
+    // -------------------------------------------------------------------------
+    function renderBottomNav() {
+      const nav = document.getElementById('bottom-nav');
+      const userTabs = [
+        { id: 'input', label: 'Daily Input', icon: 'clipboard-edit' },
+        { id: 'history', label: 'My Logs', icon: 'history' },
+        { id: 'summary', label: 'Cycle Summary', icon: 'pie-chart' }
+      ];
+      const adminTabs = [
+        { id: 'summary', label: 'Executive', icon: 'layout-dashboard' },
+        { id: 'reports', label: 'Reports', icon: 'file-bar-chart-2' },
+        { id: 'admin', label: 'Farm Setup', icon: 'sliders' },
+        { id: 'input', label: 'Quick Input', icon: 'plus-circle' }
+      ];
+
+      const tabs = appState.role === 'user' ? userTabs : adminTabs;
+      nav.style.gridTemplateColumns = `repeat(${tabs.length}, minmax(0, 1fr))`;
+
+      nav.innerHTML = tabs.map(t => {
+        const active = appState.activeTab === t.id;
+        return `
+          <button onclick="switchTab('${t.id}')"
+            class="tactile-btn flex flex-col items-center justify-center py-1 px-1 rounded-2xl transition ${active ? 'text-forest-900' : 'text-slate-400 hover:text-slate-600'}">
+            <div class="px-4 py-1 rounded-full transition ${active ? 'bg-forest-100 text-forest-800' : ''}">
+              <i data-lucide="${t.icon}" class="w-4 h-4"></i>
+            </div>
+            <span class="text-[10px] font-extrabold mt-0.5 tracking-tight">${t.label}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 7. UTILITIES & BOOTSTRAP
+    // =========================================================================
+    let snackbarTimeout = null;
+    function showSnackbar(message, iconName = 'check-circle-2') {
+      const sb = document.getElementById('snackbar');
+      document.getElementById('snackbar-text').textContent = message;
+      document.getElementById('snackbar-icon').setAttribute('data-lucide', iconName);
+      sb.classList.remove('hidden');
+      lucide.createIcons();
+      if (snackbarTimeout) clearTimeout(snackbarTimeout);
+      snackbarTimeout = setTimeout(hideSnackbar, 3500);
+    }
+
+    function hideSnackbar() {
+      document.getElementById('snackbar').classList.add('hidden');
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    window.onload = async function () {
+      renderApp();
+      await hydrateDurableStateOnBoot();
+    };
+  </script>
+</body>
+</html>
